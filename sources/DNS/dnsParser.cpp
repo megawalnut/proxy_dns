@@ -6,9 +6,9 @@ DNSParser::PktDNS DNSParser::parse(const uint8_t* packet, std::size_t size) cons
 
     if (ldns_wire2pkt(&pkt, packet, size) != LDNS_STATUS_OK) { 
         std::cerr << "DNSParser::parse: Faildel to parse packet!" << std::endl; 
-        return { ParseStatus::ParseErr, nullptr }; 
+        return { Utils::Parse::Status::Err, nullptr }; 
     } 
 
     std::cout << "DNSParser::parse: Success parse" << std::endl; 
-    return { ParseStatus::ParseOk, DNSptr(pkt) }; 
+    return { Utils::Parse::Status::Ok, DNSptr(pkt) }; 
 }

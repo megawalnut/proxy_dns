@@ -4,36 +4,27 @@
 #include <ldns/ldns.h>
 #include <map>
 
+#include "../utils.h"
 #include "dnsParser.h"
-#include "../Types/iType.h"
-#include "../Types/a.h"
-#include "../Types/aaaa.h"
-#include "../Types/mx.h"
-#include "../Types/txt.h"
-#include "../Types/cname.h"
-#include "../Types/ns.h"
+#include "dnsCache.h"
+#include "dnsResolve.h"
+
+using namespace Utils;
 
 class DNSDispatcher final {
 public:
-    enum class DNSCachingTypes : uint32_t {
-        Unknown = 0,
-        A,
-        AAAA,
-        MX,
-        TXT,
-        CNAME,
-        NS
-    };
-
     DNSDispatcher();
 
-    void dispatch(const DNSParser::DNSptr& pkt) const;
+    void dispatch(const DNSParser::DNSptr& pkt);
+    //static inline DNS::Types maptype(ldns_rr_type type);
 
 private:
-    static inline DNSCachingTypes maptype(ldns_rr_type type);
+    std::optional<Cache::Record> lookupCache(const ldns_rr* rr);
 
 private:
-    std::map<DNSCachingTypes, std::unique_ptr<IType>> m_handlers;
+    //std::map<DNS::Types, std::unique_ptr<IType>> m_handlers;
+    DNSCache m_cache;
+    DNSResolve m_resolve;
 };
 
 #endif // DNSDISPATCHER_H

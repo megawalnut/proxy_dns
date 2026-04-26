@@ -2,6 +2,8 @@
 
 #include <iostream>
 
-void NS::handle(const ldns_rr* rr) const {
+NS::NS(DNSCache& cache) : m_cache(cache) {}
+
+bool NS::handle(const ldns_rr* rr) const {
     
 }

@@ -2,10 +2,15 @@
 #define TXT_H
 
 #include "iType.h"
+#include "../DNS/dnsCache.h"
 
 class TXT final : public IType {
 public:
-    void handle(const ldns_rr* rr) const override;
+    TXT(DNSCache& cache);
+    bool handle(const ldns_rr* rr) const override;
+
+private:
+    DNSCache& m_cache;
 };
 
 #endif // TXT_H

@@ -5,15 +5,10 @@
 #include <ldns/ldns.h>
 #include <memory>
 
-#include "dnsRequest.h"
+#include "../utils.h"
 
 class DNSParser final {
 public:
-    enum class ParseStatus : uint32_t {
-          ParseOk = 0,
-          ParseErr
-    };
-
     //deleter form ldns_packet
     struct PktDeleter {
         void operator()(ldns_pkt* pkt) const {
@@ -24,7 +19,7 @@ public:
     };
 
     using DNSptr = std::unique_ptr<ldns_pkt, PktDeleter>;
-    using PktDNS = std::pair<ParseStatus, DNSptr>;
+    using PktDNS = std::pair<Utils::Parse::Status, DNSptr>;
 
     PktDNS parse(const uint8_t* packet, std::size_t size) const;
 };

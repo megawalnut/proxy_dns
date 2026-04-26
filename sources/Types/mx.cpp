@@ -2,6 +2,8 @@
 
 #include <iostream>
 
-void MX::handle(const ldns_rr* rr) const {
+MX::MX(DNSCache& cache) : m_cache(cache) {}
+
+bool MX::handle(const ldns_rr* rr) const {
     
 }

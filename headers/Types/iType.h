@@ -3,12 +3,14 @@
 
 #include <ldns/ldns.h>
 
+#include "../utils.h"
+
 class IType {
 public:
     virtual ~IType() = default;
 
     //method for a specific type
-    virtual void handle(const ldns_rr* rr) const = 0;
+    virtual bool handle(const ldns_rr* rr) const = 0;
 };
 
 #endif // ITYPE_H

@@ -23,10 +23,13 @@
 #include <iostream>
 #include "../headers/DNS/dnsParser.h"
 #include "../headers/DNS/dnsDispatcher.h"
+#include "../headers/utils.h"
 
 constexpr int UDP_DNS_PORT = 53;
 constexpr int QUEUE_SIZE = 10;
 constexpr int BUFFER_SIZE = 1024;
+
+using namespace Utils;
 
 int main(int argc, const char* argv[]) {
     DNSParser parser;
@@ -101,7 +104,7 @@ int main(int argc, const char* argv[]) {
 
         // parsing to DNS packet
         auto [ok, baseDNSPacket] = parser.parse(buffer, sizePacket);
-        if(ok != DNSParser::ParseStatus::ParseOk) {
+        if(ok != Parse::Status::Ok) {
             perror("Main::main: Recvfrom failed");
             continue;
         }
