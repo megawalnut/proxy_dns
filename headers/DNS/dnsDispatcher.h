@@ -4,33 +4,31 @@
 #include <ldns/ldns.h>
 #include <map>
 
-#include "../utils.h"
 #include "dnsParser.h"
 #include "dnsResolver.h"
 #include "dnsCache.h"
+#include "../utils.h"
 
 using namespace Utils;
 
 class DNSDispatcher final {
 public:
-    DNSDispatcher(DNSParser& parser, DNSCache& cache, DNSResolver& resolver);
-    void dispatch(const uint8_t* packet, std::size_t size);
+    DNSDispatcher(DNSCache& cache, DNSResolver& resolver);
+    DNSParser::DNSPtr dispatch(const  DNSParser::DNSPtr& packet);
 
 private:
     static inline DNS::Types maptype(ldns_rr_type type);
+    static inline ldns_rr_type mapBack(DNS::Types type);
+    static ldns_rr* buildRr(const Cache::Record& rr);
+    static bool isAnswer(const DNSParser::DNSPtr& pkt);
     
-    bool parsePacket(const uint8_t* packet, std::size_t size) const;
-    std::optional<Cache::Record> lookupCache(const ldns_rr* rr);
-    ldns_pkt createAnswer() const;
-    void addQuestions() const;
-    bool addToCache();
+    std::vector<ldns_rr> getQuestionRRs(const DNSParser::DNSPtr& pkt) const;
+    std::vector<Cache::Record> lookupCache(const std::vector<ldns_rr>& rr);
+    bool addToCache(const std::vector<ldns_rr>& rrs);
+    DNSParser::DNSPtr createAnswer(const std::vector<Cache::Record>& rrs) const;
     
-    bool isResponce() const;
     
 private:
-    //std::map<DNS::Types, std::unique_ptr<IType>> m_handlers;
-    DNSParser::DNSptr m_pkt;
-    DNSParser& m_parser;
     DNSCache& m_cache;
     DNSResolver& m_resolver;
 };

@@ -20,7 +20,7 @@ public:
     };
 
 public:
-    void put(const Cache::Key& key, const Cache::Record& rec);
+    void put(const Cache::Record& rec);
     std::optional<Cache::Record> get(const Cache::Key& key);
 
 private:

@@ -1,11 +1,11 @@
 #include "../../headers/DNS/dnsCache.h"
 
-void DNSCache::put(const Cache::Key& key, const Cache::Record& rec) {
+void DNSCache::put(const Cache::Record& rec) {
     Cache::Record tmp = rec;
     tmp.created = std::chrono::steady_clock::now();
 
     // if record is exists -> replace
-    m_records[key] = tmp;
+    m_records[rec.key] = tmp;
 }
 
 std::optional<Cache::Record> DNSCache::get(const Cache::Key& key) {

@@ -7,6 +7,18 @@
 #include <chrono>
 
 namespace Utils {
+    namespace DNS {
+        enum class Types : uint32_t {
+            Unknown = 0,
+            A,
+            AAAA,
+            MX,
+            TXT,
+            CNAME,
+            NS
+        };
+    };
+
     namespace Cache {
         struct Key {
             std::string domain;
@@ -18,21 +30,10 @@ namespace Utils {
         };
 
         struct Record {
+            Cache::Key key;
             std::vector<std::string> rdata;
             uint32_t ttl = 0;
             std::chrono::steady_clock::time_point created;
-        };
-    };
-
-    namespace DNS {
-        enum class Types : uint32_t {
-            Unknown = 0,
-            A,
-            AAAA,
-            MX,
-            TXT,
-            CNAME,
-            NS
         };
     };
 

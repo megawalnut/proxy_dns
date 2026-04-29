@@ -2,8 +2,10 @@
 #define DNSPARSER_H
 
 #include <iostream>
-#include <ldns/ldns.h>
 #include <memory>
+#include <optional>
+#include <vector>
+#include <ldns/ldns.h>
 
 #include "../utils.h"
 
@@ -18,10 +20,11 @@ public:
         }
     };
 
-    using DNSptr = std::unique_ptr<ldns_pkt, PktDeleter>;
-    using PktDNS = std::pair<Utils::Parse::Status, DNSptr>;
+    using DNSPtr = std::unique_ptr<ldns_pkt, PktDeleter>;
+    using DNSPkt = std::pair<Utils::Parse::Status, DNSPtr>;
 
-    PktDNS parse(const uint8_t* packet, std::size_t size) const;
+    static DNSPkt deserialize(const std::vector<uint8_t>& packet);
+    static std::vector<uint8_t> serialize(const DNSPtr& packet);
 };
 
 #endif // DNSPARSER_H
