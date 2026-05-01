@@ -1,11 +1,11 @@
 #include "../../headers/DNS/dnsParser.h"
 
-// converting the byte stream into a basic dns structure, see RFC1035 
+// converting the byte stream into a basic dns structure, see RFC1035
 /*static*/
-DNSParser::DNSPkt DNSParser::deserialize(const std::vector<uint8_t>& packet) { 
+DNSParser::DNSPkt DNSParser::deserialize(const std::vector<uint8_t>& packet) {
     ldns_pkt *pkt = nullptr; 
 
-    if (ldns_wire2pkt(&pkt, packet.data(), packet.size()) != LDNS_STATUS_OK) { 
+    if(ldns_wire2pkt(&pkt, packet.data(), packet.size()) != LDNS_STATUS_OK) { 
         std::cerr << "DNSParser::deserialize: Faildel to parse packet!" << std::endl; 
         return { Utils::Parse::Status::Err, nullptr }; 
     } 
@@ -15,7 +15,7 @@ DNSParser::DNSPkt DNSParser::deserialize(const std::vector<uint8_t>& packet) {
 }
 
 /*static*/
-std::vector<uint8_t> DNSParser::serialize(const DNSPtr& packet) { 
+std::vector<uint8_t> DNSParser::serialize(const DNSPtr& packet) {
     uint8_t* wire = nullptr;
     std::size_t wireSize = 0;
 

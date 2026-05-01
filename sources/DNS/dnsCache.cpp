@@ -15,6 +15,7 @@ std::optional<Cache::Record> DNSCache::get(const Cache::Key& key) {
     }
 
     if(isExpired(it->second)) {
+        std::cerr << "DNSCache::get: Entry TTL finished. Delete entry" << std::endl;
         m_records.erase(it);
         return std::nullopt;
     }

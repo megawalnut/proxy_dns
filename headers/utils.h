@@ -8,6 +8,11 @@
 
 namespace Utils {
     namespace DNS {
+        enum class ClassTypes : uint32_t {
+            Unknown = 0,
+            Internet
+        };
+
         enum class Types : uint32_t {
             Unknown = 0,
             A,
@@ -31,8 +36,9 @@ namespace Utils {
 
         struct Record {
             Cache::Key key;
-            std::vector<std::string> rdata;
+            DNS::ClassTypes classType;
             uint32_t ttl = 0;
+            std::vector<std::string> rdata;
             std::chrono::steady_clock::time_point created;
         };
     };

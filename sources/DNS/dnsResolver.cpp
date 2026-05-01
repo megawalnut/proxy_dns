@@ -1,6 +1,6 @@
 #include "../../headers/DNS/dnsResolver.h"
 
-DNSResolver::DNSResolver(const std::string& addr) {
+DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
     m_upstream.sin_family = AF_INET;
     m_upstream.sin_port = htons(UDP_DNS_PORT);
     if(inet_pton(AF_INET, addr.c_str(), &m_upstream.sin_addr) != 1) {
@@ -31,8 +31,10 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         return { Utils::Parse::Status::Err, nullptr }; 
     }
 
-    const std::vector question = DNSParser::serialize(packet);
+    // sserialize ldns packet to wire bytes 
+    const std::vector<uint8_t> question = DNSParser::serialize(packet);
 
+    // send to remote host
     ssize_t senSize = sendto(m_socket, question.data(), question.size(), 0, 
             reinterpret_cast<sockaddr*>(&m_upstream), sizeof(m_upstream));
 
@@ -44,9 +46,11 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     sockaddr_in from{};
     socklen_t len = sizeof(from);
 
+    // buffer for aPacket
     std::vector<uint8_t> answer;
     answer.resize(BUFFER_SIZE);
 
+    // get receive
     ssize_t recSize = recvfrom(m_socket, answer.data(), answer.size(),
              0, reinterpret_cast<sockaddr*>(&from), &len);
 
@@ -55,12 +59,14 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         return { Utils::Parse::Status::Err, nullptr }; 
     }
 
+    // validate host
     if(from.sin_addr.s_addr != m_upstream.sin_addr.s_addr ||
         from.sin_port != m_upstream.sin_port) {
         std::cerr << "DNSResolver::resolve: Unknown sender" << std::endl;
         return { Utils::Parse::Status::Err, nullptr }; 
     }
 
+    // delete unused data
     answer.resize(recSize);
 
     return DNSParser::deserialize(answer);
