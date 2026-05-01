@@ -3,7 +3,7 @@
 DNSServer::DNSServer(DNSDispatcher& disp) : m_dispatcher(disp) {
     m_serv.sin_family = AF_INET;
     m_serv.sin_port = htons(UDP_DNS_PORT);
-    m_serv.sin_addr.s_addr = INADDR_ANY;
+    m_serv.sin_addr.s_addr = htonl(INADDR_ANY);
 
     m_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if(m_socket  < 0) {
@@ -20,7 +20,6 @@ DNSServer::DNSServer(DNSDispatcher& disp) : m_dispatcher(disp) {
 }
 
 bool DNSServer::run() {
-    std::cout << "Running..." << std::endl;
     if(m_socket < 0) {
         perror("DNSServer::run: Socket closed");
         return false;
@@ -43,20 +42,15 @@ bool DNSServer::run() {
             continue;
         }
 
-        if(sizePacket == 0) {
-            perror("DNSServer::run: Empty packet");
-            continue;
-        }
-
-        std::cout << "Receive packet" << std::endl;
+        std::cout << "Receive packet size: " << sizePacket << std::endl;
 
         // delete unused data
         question.resize(sizePacket);
 
         // parsing qPacket
-        auto [ok, qPacket] = DNSParser::deserialize(question);
-        if(ok != Parse::Status::Ok) {
-            std::cerr << "DNSServer::run: Parse failed" << std::endl;
+        const auto& [okDes, qPacket] = DNSParser::deserialize(question);
+        if(okDes != Parse::Status::Ok) {
+            std::cerr << "DNSServer::run: Deserialize failed" << std::endl;
             continue;
         }
 
@@ -67,8 +61,14 @@ bool DNSServer::run() {
             continue;
         }
 
-        std::vector<uint8_t> answer = DNSParser::serialize(aPacket);
+        // parsing aPacket
+        const auto& [okSer, answer] = DNSParser::serialize(aPacket);
+        if(okSer != Parse::Status::Ok) {
+            std::cerr << "DNSServer::run: Serialize failed" << std::endl;
+            continue;
+        }
 
+        // send answer
         ssize_t senSize = sendto(m_socket, answer.data(), answer.size(), 0, 
                     reinterpret_cast<sockaddr*>(&client), sizeof(client));
                     

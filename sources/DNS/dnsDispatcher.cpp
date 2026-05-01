@@ -21,6 +21,10 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
 
     // forming skeleton
     DNSParser::DNSPtr aPacket = basePacket(clientPacket);
+    if(!aPacket) {
+        std::cerr << "DNSDispatcher::dispatch: Failed create base packet" << std::endl;
+        return makeErrPacket(clientPacket, LDNS_RCODE_FORMERR);
+    }
 
     // get questions from client
     std::vector<ldns_rr*> resources = getQuestionRRs(clientPacket);
@@ -43,7 +47,7 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
         return makeErrPacket(aPacket, LDNS_RCODE_SERVFAIL);
     }
 
-    //  get questions from resolving packet
+    //  get answer from resolving packet
     resources.clear();
     resources = getAnswerRRs(aPacket);
 
@@ -77,13 +81,13 @@ std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*
             return {};
         }
 
-        char* c_name = ldns_rdf2str(domain);
-        if(!c_name) {
+        char* cName = ldns_rdf2str(domain);
+        if(!cName) {
             return {};
         }
 
-        std::string name(c_name);
-        free(c_name);
+        std::string name(cName);
+        free(cName);
 
         // trim
         if(!name.empty() && name.back() == '.') {
@@ -106,7 +110,7 @@ std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*
 }
 bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
     if(rrs.empty()) {
-        std::cerr << "DNSDispatcher::addToCache: Questions empty" << std::endl;
+        std::cerr << "DNSDispatcher::addToCache: Answers empty" << std::endl;
         return false;
     }
 
@@ -128,14 +132,14 @@ bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
             continue;
         }
 
-        char* c_name = ldns_rdf2str(domain);
-        if(!c_name) {
+        char* cName = ldns_rdf2str(domain);
+        if(!cName) {
             allOk = false;
             continue;
         }
 
-        std::string name(c_name);
-        free(c_name);
+        std::string name(cName);
+        free(cName);
 
         // trim
         if(!name.empty() && name.back() == '.') {
@@ -172,13 +176,13 @@ bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
                 continue;
             }
 
-            char* c_name = ldns_rdf2str(rdf);
-            if(!c_name) {
+            char* cName2 = ldns_rdf2str(rdf);
+            if(!cName2) {
                 allOk = false;
                 continue;
             }
-            rdata.emplace_back(c_name);
-            free(c_name);
+            rdata.emplace_back(cName2);
+            free(cName2);
         }
 
         rec.rdata = rdata;
@@ -191,8 +195,8 @@ bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
 // --------------------------------- FORMING PACKET ----------------------------------
 DNSParser::DNSPtr DNSDispatcher::basePacket(const DNSParser::DNSPtr& pkt) const {
     if(!pkt) {
-        std::cerr << "DNSDispatcher::basePacket: QPacket empty" << std::endl;
-        return {};
+        std::cerr << "DNSDispatcher::basePacket: Invalid packet" << std::endl;
+        return DNSParser::DNSPtr(nullptr);
     }
     
     // ---------------------- PACKET ------------------------
@@ -200,7 +204,7 @@ DNSParser::DNSPtr DNSDispatcher::basePacket(const DNSParser::DNSPtr& pkt) const 
     ldns_pkt* base = ldns_pkt_new();
     if(!base) {
         std::cerr << "DNSDispatcher::basePacket: Failed to allocate packet" << std::endl;
-        return {};
+        return DNSParser::DNSPtr(nullptr);
     }
 
     // ---------------------- HEADER ------------------------
@@ -222,16 +226,17 @@ DNSParser::DNSPtr DNSDispatcher::basePacket(const DNSParser::DNSPtr& pkt) const 
     if(!questions) {
         std::cerr << "DNSDispatcher::basePacket:Questions empty" << std::endl;
         ldns_pkt_free(base);
-        return {};
+        return DNSParser::DNSPtr(nullptr);
     }
 
     ldns_rr_list* copy = ldns_rr_list_clone(questions);
     if(!copy) {
         std::cerr << "DNSDispatcher::basePacket: Failed to allocate question" << std::endl;
         ldns_pkt_free(base);
-        return {};
+        return DNSParser::DNSPtr(nullptr);
     }
     ldns_pkt_set_question(base, copy);
+    ldns_pkt_set_qdcount(base, ldns_rr_list_rr_count(copy));
 
     // --------------------- ANSWER ----------------------
     // FILL ANSWER LATER!
@@ -248,21 +253,24 @@ DNSParser::DNSPtr DNSDispatcher::makeSucPacket(const DNSParser::DNSPtr& basePack
     // ---------------------- PACKET ------------------------
     if(!basePacket) {
         std::cerr << "DNSDispatcher::makeSucPacket: Invalid packet" << std::endl;
-        return {};
+        return DNSParser::DNSPtr(nullptr);
     }
 
     auto base = ldns_pkt_clone(basePacket.get());
     if(!base) {
         std::cerr << "DNSDispatcher::makeSucPacket: Failed to clone packet" << std::endl;
-        return {};
+        return makeErrPacket(basePacket, LDNS_RCODE_FORMERR);
     }
     
+    // --------------------- HEADER -------------------------
+    // all flags set in basePacket()
+
     // --------------------- ANSWER -------------------------
     ldns_rr_list* answer = ldns_rr_list_new();
     if(!answer) {
         std::cerr << "DNSDispatcher::makeSucPacket: Failed to allocate answer" << std::endl;
         ldns_pkt_free(base);
-        return {};
+        return makeErrPacket(basePacket, LDNS_RCODE_FORMERR);
     }
 
     for(const auto& rr : rrs) {
@@ -273,6 +281,7 @@ DNSParser::DNSPtr DNSDispatcher::makeSucPacket(const DNSParser::DNSPtr& basePack
     }
 
     ldns_pkt_set_answer(base, answer);
+    ldns_pkt_set_ancount(base, ldns_rr_list_rr_count(answer));
 
     // -------------------- AUTHORITY -----------------------
     ldns_pkt_set_authority(base, ldns_rr_list_new());
@@ -287,13 +296,13 @@ DNSParser::DNSPtr DNSDispatcher::makeErrPacket(const DNSParser::DNSPtr& basePack
     // ---------------------- PACKET ------------------------
     if(!basePacket) {
         std::cerr << "DNSDispatcher::makeErrPacket: Invalid packet" << std::endl;
-        return {};
+        return DNSParser::DNSPtr(nullptr);
     }
 
     auto base = ldns_pkt_clone(basePacket.get());
     if(!base) {
         std::cerr << "DNSDispatcher::makeErrPacket: Failed to clone packet" << std::endl;
-        return {};
+        return DNSParser::DNSPtr(nullptr);
     }
 
     // ---------------------- HEADER ------------------------
@@ -344,14 +353,14 @@ std::vector<ldns_rr*> DNSDispatcher::getQuestionRRs(const DNSParser::DNSPtr& pkt
     return resources;
 }
 std::vector<ldns_rr*> DNSDispatcher::getAnswerRRs(const DNSParser::DNSPtr& pkt) const {
-    // get question chapter
+    // get answers chapter
     ldns_rr_list* answers = ldns_pkt_answer(pkt.get());
     if(!answers) {
         std::cerr << "Dispatcher::getAnswerRRs: Answers empty" << std::endl;
         return {};
     }
 
-    // get questions count
+    // get answers count
     const std::size_t answersCount = ldns_rr_list_rr_count(answers);
     
     std::vector<ldns_rr*> resources;

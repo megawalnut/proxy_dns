@@ -13,7 +13,8 @@
 #include "../utils.h"
 
 class DNSServer final {
-    static constexpr std::size_t BUFFER_SIZE = 2048;
+    // we specifically limit the buffer, since the proxy does not support TC
+    static constexpr std::size_t BUFFER_SIZE = 512;
     static constexpr int UDP_DNS_PORT = 53;
     static constexpr int QUEUE_SIZE = 10;
 

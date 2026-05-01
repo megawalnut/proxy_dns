@@ -28,11 +28,14 @@ DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
 DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     if(m_socket < 0) {
         perror("DNSResolver::resolve: Socket closed");
-        return { Utils::Parse::Status::Err, nullptr }; 
+        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) };
     }
 
     // sserialize ldns packet to wire bytes 
-    const std::vector<uint8_t> question = DNSParser::serialize(packet);
+    const auto& [ok, question] = DNSParser::serialize(packet);
+    if(ok != Utils::Parse::Status::Ok) {
+        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) };
+    }
 
     // send to remote host
     ssize_t senSize = sendto(m_socket, question.data(), question.size(), 0, 
@@ -40,7 +43,7 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
 
     if(senSize <= 0) {
         perror("DNSResolver::resolve: Failed sendto");
-        return { Utils::Parse::Status::Err, nullptr }; 
+        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
     }
 
     sockaddr_in from{};
@@ -56,14 +59,14 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
 
     if(recSize <= 0) {
         perror("DNSResolver::resolve: Failed recvfrom");
-        return { Utils::Parse::Status::Err, nullptr }; 
+        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
     }
 
     // validate host
     if(from.sin_addr.s_addr != m_upstream.sin_addr.s_addr ||
         from.sin_port != m_upstream.sin_port) {
         std::cerr << "DNSResolver::resolve: Unknown sender" << std::endl;
-        return { Utils::Parse::Status::Err, nullptr }; 
+        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
     }
 
     // delete unused data

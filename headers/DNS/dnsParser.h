@@ -22,9 +22,10 @@ public:
 
     using DNSPtr = std::unique_ptr<ldns_pkt, PktDeleter>;
     using DNSPkt = std::pair<Utils::Parse::Status, DNSPtr>;
+    using DNSWire = std::pair<Utils::Parse::Status, std::vector<uint8_t>>;
 
     static DNSPkt deserialize(const std::vector<uint8_t>& packet);
-    static std::vector<uint8_t> serialize(const DNSPtr& packet);
+    static DNSWire serialize(const DNSPtr& packet);
 };
 
 #endif // DNSPARSER_H

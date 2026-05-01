@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build dns",
+      "type": "shell",
+      "command": "g++ $(find sources -name \"*.cpp\") -I headers -o build/dns -lldns -g -O0 -Wall",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}

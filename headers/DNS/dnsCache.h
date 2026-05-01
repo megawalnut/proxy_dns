@@ -1,7 +1,6 @@
 #ifndef DNSCACHE_H
 #define DNSCACHE_H
 
-#include <ldns/ldns.h>
 #include <unordered_map>
 #include <optional>
 
@@ -23,10 +22,10 @@ public:
     void put(const Cache::Record& rec);
     std::optional<Cache::Record> get(const Cache::Key& key);
 
-private:
+private:    // methods
     bool isExpired(const Cache::Record& rec) const;
 
-private:
+private:    // fields
     std::unordered_map<Cache::Key, Cache::Record, RHash> m_records;
 };
 

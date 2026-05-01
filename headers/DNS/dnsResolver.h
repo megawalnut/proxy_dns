@@ -12,7 +12,7 @@
 #include "../utils.h"
 
 class DNSResolver final {
-    static constexpr std::size_t BUFFER_SIZE = 2048;
+    static constexpr std::size_t BUFFER_SIZE = 512;
     static constexpr int UDP_DNS_PORT = 53;
 public: 
     DNSResolver(const std::string& addr);
