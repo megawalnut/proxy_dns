@@ -10,7 +10,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport Svg SvgWidgets)
+
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/qcustomplot
+)
 
 set(PROJECT_SOURCES
     #________________________________________
@@ -19,12 +24,45 @@ set(PROJECT_SOURCES
     sources/mainwindow.cpp
     #-------------- THEMES -------------
     sources/themes/darkTheme.cpp
+    #---------------- UI ---------------
+    sources/ui/toolBar.cpp
+    sources/ui/statusBar.cpp
+    sources/ui/centralWidget.cpp
+    #------------ Dashboar W -----------
+    sources/ui/centralDashboardWidgets/requestsChartWidget.cpp
+    sources/ui/centralDashboardWidgets/cacheHitRate.cpp
+    sources/ui/centralDashboardWidgets/latencyP95.cpp
+    sources/ui/centralDashboardWidgets/topDomains.cpp
+    sources/ui/centralDashboardWidgets/querryTypes.cpp
+    sources/ui/centralDashboardWidgets/recentErrors.cpp
+    sources/ui/centralDashboardWidgets/dnsTypeCardWidget.cpp
+    #-------------- Model --------------
+    sources/models/errorsModel.cpp
 
     #________________________________________
     #---------------- HEADERS ---------------
     headers/mainwindow.h
     #-------------- THEMES -------------
     headers/themes/darkTheme.h
+    #---------------- UI ---------------
+    headers/ui/toolBar.h
+    headers/ui/statusBar.h
+    headers/ui/centralWidget.h
+    #------------ Dashboar W -----------
+    headers/ui/centralDashboardWidgets/requestsChartWidget.h
+    headers/ui/centralDashboardWidgets/cacheHitRate.h
+    headers/ui/centralDashboardWidgets/latencyP95.h
+    headers/ui/centralDashboardWidgets/topDomains.h
+    headers/ui/centralDashboardWidgets/querryTypes.h
+    headers/ui/centralDashboardWidgets/recentErrors.h
+    headers/ui/centralDashboardWidgets/dnsTypeCardWidget.h
+    #-------------- Model --------------
+    headers/models/errorsModel.h
+
+    #________________________________________
+    #-------------- Dependencies ------------
+    dependencies/qcustomplot/qcustomplot.h
+    dependencies/qcustomplot/qcustomplot.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -50,7 +88,12 @@ else()
     endif()
 endif()
 
-target_link_libraries(DNSClient PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(DNSClient PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::PrintSupport
+    Qt${QT_VERSION_MAJOR}::Svg
+    Qt${QT_VERSION_MAJOR}::SvgWidgets
+)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

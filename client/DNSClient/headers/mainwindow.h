@@ -3,20 +3,33 @@
 
 #include <QMainWindow>
 #include <QToolBar>
+#include <QStatusBar>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QGridLayout>
+
+#include "../headers/ui/toolBar.h"
+#include "../headers/ui/statusBar.h"
+#include "../headers/ui/centralWidget.h"
+
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    explicit MainWindow(QWidget *parent = nullptr);
 
 private:
     void init();
 
 private:
-    QToolBar* m_toolBar = nullptr;
+    // toolBar
+    ToolBar* m_toolBar = nullptr;
+
+    // centralWidget
+    CentralWidget* m_centralWidget = nullptr;
+
+    // statusBar
+    StatusBar* m_statusBar = nullptr;
 };
 #endif // MAINWINDOW_H
