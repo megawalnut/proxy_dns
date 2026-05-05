@@ -4,10 +4,15 @@ void DNSCache::put(const Cache::Record& rec) {
     Cache::Record tmp = rec;
     tmp.created = std::chrono::steady_clock::now();
     
-    m_records[rec.key] = tmp;
+    {
+        std::lock_guard lock(m_mtx);
+        m_records[rec.key] = tmp;
+    }
 }
 
 std::optional<Cache::Record> DNSCache::get(const Cache::Key& key) {
+    std::lock_guard lock(m_mtx);
+    
     auto it = m_records.find(key);
     if(it == m_records.end()) {
         return std::nullopt;

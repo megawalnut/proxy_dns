@@ -3,11 +3,10 @@
 
 #include <iostream>
 #include <memory>
-#include <optional>
 #include <vector>
 #include <ldns/ldns.h>
 
-#include "../utils.h"
+#include "../Common/utils.h"
 
 class DNSParser final {
 public:
@@ -24,7 +23,7 @@ public:
     using DNSPkt = std::pair<Utils::Parse::Status, DNSPtr>;
     using DNSWire = std::pair<Utils::Parse::Status, std::vector<uint8_t>>;
 
-    static DNSPkt deserialize(const std::vector<uint8_t>& packet);
+    static DNSPkt deserialize(const std::vector<uint8_t>& packet, const std::size_t size);
     static DNSWire serialize(const DNSPtr& packet);
 };
 

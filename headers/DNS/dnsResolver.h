@@ -2,14 +2,12 @@
 #define DNSRESOLVER_H
 
 #include <iostream>
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <mutex>
 
 #include "dnsParser.h"
-#include "../utils.h"
+#include "../Common/utils.h"
 
 class DNSResolver final {
     static constexpr std::size_t BUFFER_SIZE = 512;
@@ -23,6 +21,7 @@ public:
 private:
     int m_socket = -1;
     sockaddr_in m_upstream;
+    std::mutex m_mtx;
 };
 
 #endif // DNSRESOLVER_H

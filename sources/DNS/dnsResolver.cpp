@@ -26,6 +26,8 @@ DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
 }
 
 DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
+    std::lock_guard lock{ m_mtx };
+    
     if(m_socket < 0) {
         perror("DNSResolver::resolve: Socket closed");
         return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) };
@@ -69,10 +71,7 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
     }
 
-    // delete unused data
-    answer.resize(recSize);
-
-    return DNSParser::deserialize(answer);
+    return DNSParser::deserialize(answer, recSize);
 }
 
 DNSResolver::~DNSResolver() {

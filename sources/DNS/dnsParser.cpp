@@ -2,10 +2,10 @@
 
 // converting the byte stream into a basic dns structure, see RFC1035
 /*static*/
-DNSParser::DNSPkt DNSParser::deserialize(const std::vector<uint8_t>& packet) {
+DNSParser::DNSPkt DNSParser::deserialize(const std::vector<uint8_t>& packet, const std::size_t size) {
     ldns_pkt *pkt = nullptr;
 
-    if(ldns_wire2pkt(&pkt, packet.data(), packet.size()) != LDNS_STATUS_OK) {
+    if(ldns_wire2pkt(&pkt, packet.data(), size) != LDNS_STATUS_OK) {
         std::cerr << "DNSParser::deserialize: Failed deserialize packet" << std::endl;
         return { Utils::Parse::Status::Err, DNSPtr(nullptr) };
     }

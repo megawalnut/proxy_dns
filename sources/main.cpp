@@ -1,6 +1,4 @@
-#include <iostream>
-
-#include "../headers/DNS/dnsServer.h"
+#include "../headers/Net/dnsServer.h"
 #include "../headers/DNS/dnsResolver.h"
 #include "../headers/DNS/dnsDispatcher.h"
 

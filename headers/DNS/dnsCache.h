@@ -1,10 +1,12 @@
 #ifndef DNSCACHE_H
 #define DNSCACHE_H
 
+#include <iostream>
 #include <unordered_map>
 #include <optional>
+#include <mutex>
 
-#include "../utils.h"
+#include "../Common/utils.h"
 
 using namespace Utils;
 
@@ -22,11 +24,12 @@ public:
     void put(const Cache::Record& rec);
     std::optional<Cache::Record> get(const Cache::Key& key);
 
-private:    // methods
+private:
     bool isExpired(const Cache::Record& rec) const;
 
-private:    // fields
+private:
     std::unordered_map<Cache::Key, Cache::Record, RHash> m_records;
+    std::mutex m_mtx;
 };
 
 #endif // DNSCACHE_H

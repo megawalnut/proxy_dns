@@ -1,13 +1,14 @@
 #ifndef DNSDISPATCHER_H
 #define DNSDISPATCHER_H
 
+#include <iostream>
 #include <ldns/ldns.h>
 #include <map>
 
 #include "dnsParser.h"
 #include "dnsResolver.h"
 #include "dnsCache.h"
-#include "../utils.h"
+#include "../Common/utils.h"
 
 using namespace Utils;
 

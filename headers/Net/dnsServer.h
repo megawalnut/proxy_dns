@@ -2,15 +2,16 @@
 #define DNSSERVER_H
 
 #include <iostream>
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <atomic> 
 
-#include "dnsParser.h"
-#include "dnsDispatcher.h"
-#include "../utils.h"
+#include "../DNS/dnsParser.h"
+#include "../DNS/dnsDispatcher.h"
+#include "../DNS/packet.h"
+#include "../Multithreading/threadPool.h"
+#include "../Multithreading/Tasks/task.h"
+#include "../Multithreading/Tasks/dnsTask.h"
+#include "../Common/utils.h"
 
 class DNSServer final {
     // we specifically limit the buffer, since the proxy does not support TC
@@ -25,9 +26,16 @@ public:
     bool run();
 
 private:
+    void senderLoop();
+
+private:
     int m_socket = -1;
     sockaddr_in m_serv;
     DNSDispatcher& m_dispatcher;
+
+    ThreadPool m_threadPool;
+    std::thread m_sender;
+    std::atomic<bool> m_stop = false;
 };
 
 #endif // DNSSERVER_H
