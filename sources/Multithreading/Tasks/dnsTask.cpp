@@ -1,7 +1,7 @@
 #include "../../../headers/Multithreading/Tasks/dnsTask.h"
 
 DNSTask::DNSTask(DNSDispatcher& disp, 
-                 const Packet& packet) 
+                 Packet packet) 
                  : 
                  m_disp(disp), 
                  m_packet(packet) 

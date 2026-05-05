@@ -14,12 +14,13 @@ class DNSResolver final {
     static constexpr int UDP_DNS_PORT = 53;
 public: 
     DNSResolver(const std::string& addr);
-    ~DNSResolver();
 
     DNSParser::DNSPkt resolve(const DNSParser::DNSPtr& packet);
 
 private:
-    int m_socket = -1;
+    static int makeSocket();
+
+private:
     sockaddr_in m_upstream;
     std::mutex m_mtx;
 };

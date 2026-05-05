@@ -49,7 +49,7 @@ bool DNSServer::run() {
         packet.data.resize(sizePacket);
 
         // create dnsTask
-        std::shared_ptr<Task> newTask = std::make_shared<DNSTask>(m_dispatcher, packet); 
+        std::shared_ptr<Task> newTask = std::make_shared<DNSTask>(m_dispatcher, std::move(packet)); 
 
         m_threadPool.enqueue(newTask);
 

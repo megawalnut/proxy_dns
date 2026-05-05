@@ -6,32 +6,17 @@ DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
     if(inet_pton(AF_INET, addr.c_str(), &m_upstream.sin_addr) != 1) {
         throw std::invalid_argument("Failed resolving address");
     }
-
-    m_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if(m_socket < 0) {
-        perror("DNSResolver::DNSResolver: Socket failed");
-        throw std::runtime_error("Socket failed");
-    }
-
-    // for block receive if server is unreacheble
-    timeval tv{};
-    tv.tv_sec = 5;
-    tv.tv_usec = 0;
-
-    if(setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-        perror("DNSResolver::DNSResolver: Setsockopt failed");
-        close(m_socket);
-        throw std::runtime_error("Setsockopt failed");
-    }
 }
 
 DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
-    std::lock_guard lock{ m_mtx };
-    
-    if(m_socket < 0) {
+    thread_local int sock = makeSocket();
+    if(sock < 0) {
         perror("DNSResolver::resolve: Socket closed");
         return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) };
     }
+
+    // remember for get exactly my packet
+    const uint16_t id = ldns_pkt_id(packet.get());
 
     // sserialize ldns packet to wire bytes 
     const auto& [ok, question] = DNSParser::serialize(packet);
@@ -40,7 +25,7 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     }
 
     // send to remote host
-    ssize_t senSize = sendto(m_socket, question.data(), question.size(), 0, 
+    ssize_t senSize = sendto(sock, question.data(), question.size(), 0, 
             reinterpret_cast<sockaddr*>(&m_upstream), sizeof(m_upstream));
 
     if(senSize <= 0) {
@@ -52,30 +37,57 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     socklen_t len = sizeof(from);
 
     // buffer for aPacket
-    std::vector<uint8_t> answer;
-    answer.resize(BUFFER_SIZE);
+    std::vector<uint8_t> answer(BUFFER_SIZE);
 
-    // get receive
-    ssize_t recSize = recvfrom(m_socket, answer.data(), answer.size(),
-             0, reinterpret_cast<sockaddr*>(&from), &len);
+    while(true) {
+        answer.assign(BUFFER_SIZE, 0);
 
-    if(recSize <= 0) {
-        perror("DNSResolver::resolve: Failed recvfrom");
-        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
+        // get receive
+        ssize_t recSize = recvfrom(sock, answer.data(), answer.size(),
+                0, reinterpret_cast<sockaddr*>(&from), &len);
+
+        if(recSize <= 0) {
+            perror("DNSResolver::resolve: Failed recvfrom");
+            return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
+        }
+
+        // validate host
+        if(from.sin_addr.s_addr != m_upstream.sin_addr.s_addr ||
+            from.sin_port != m_upstream.sin_port) {
+            std::cerr << "DNSResolver::resolve: Unknown sender" << std::endl;
+            continue; 
+        }
+
+        auto [ok, pkt] = DNSParser::deserialize(answer, recSize);
+        if(ok != Utils::Parse::Status::Ok) {
+            continue;
+        }
+
+        // this packet is not our, skip
+        if(ldns_pkt_id(pkt.get()) != id) {
+            continue;
+        }
+        return {Utils::Parse::Status::Ok, std::move(pkt)};
     }
-
-    // validate host
-    if(from.sin_addr.s_addr != m_upstream.sin_addr.s_addr ||
-        from.sin_port != m_upstream.sin_port) {
-        std::cerr << "DNSResolver::resolve: Unknown sender" << std::endl;
-        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
-    }
-
-    return DNSParser::deserialize(answer, recSize);
 }
 
-DNSResolver::~DNSResolver() {
-    if(m_socket >= 0) {
-        close(m_socket);
+/*static*/
+int DNSResolver::makeSocket() {
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if(sock < 0) {
+        perror("DNSResolver::DNSResolver: Socket failed");
+        throw std::runtime_error("Socket failed");
     }
+
+    // for block receive if server is unreacheble
+    timeval tv{};
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        perror("DNSResolver::DNSResolver: Setsockopt failed");
+        close(sock);
+        throw std::runtime_error("Setsockopt failed");
+    }
+    return sock;
 }
