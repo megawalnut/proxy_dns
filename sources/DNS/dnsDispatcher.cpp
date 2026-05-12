@@ -23,6 +23,7 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
     DNSParser::DNSPtr aPacket = basePacket(clientPacket);
     if(!aPacket) {
         std::cerr << "DNSDispatcher::dispatch: Failed create base packet" << std::endl;
+        addError("unknown", "FORMERR");
         return makeErrPacket(clientPacket, LDNS_RCODE_FORMERR);
     }
 
@@ -30,26 +31,40 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
     std::vector<ldns_rr*> resources = getQuestionRRs(clientPacket);
     if(resources.empty()) {
         std::cerr << "DNSDispatcher::dispatch: Question empty" << std::endl;
+        addError("unknown", "FORMERR");
         return makeErrPacket(aPacket, LDNS_RCODE_FORMERR);
     }
+
+    std::string errDomain = getFirstDomain(resources[0]);
 
     // check cache
     std::vector<Cache::Record> result = lookupCache(resources);
     if(!result.empty()) {
+        ++m_cacheHits;
         return makeSucPacket(aPacket, result);
     }
+
+    ++m_cacheMiss;
         
     // resolving + creating answer
-    Parse::Status ok = Parse::Status::Err;
-    std::tie(ok, aPacket) = m_resolver.resolve(clientPacket);
-    if(ok != Parse::Status::Ok) {
+    Resolve::Result res;
+    res = m_resolver.resolve(clientPacket);
+    if(res.status != Parse::Status::Ok) {
         std::cerr << "DNSDispatcher::dispatch: Failed resolving" << std::endl;
+        addError(errDomain, res.error);
         return makeErrPacket(aPacket, LDNS_RCODE_SERVFAIL);
     }
+
+    aPacket = std::move(res.packet);
 
     //  get answer from resolving packet
     resources.clear();
     resources = getAnswerRRs(aPacket);
+    if(resources.empty()) {
+        std::cerr << "DNSDispatcher::dispatch: Answer empty" << std::endl;
+        addError(errDomain, "NXDOMAIN");
+        return makeErrPacket(aPacket, LDNS_RCODE_NXDOMAIN);
+    }
 
     // add to cache
     if(!addToCache(resources)) {
@@ -61,14 +76,14 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
 
 
 // ------------------------------------- CACHE ---------------------------------------
-std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*>& rrs) const {
+std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*>& rrs) {
     std::vector<Cache::Record> result;
     result.reserve(rrs.size());
 
     for(const auto& rr : rrs) {
         // get type
         const ldns_rr_type type = ldns_rr_get_type(rr);
-        auto t = DNSDispatcher::fromDNSType(type);
+        auto t = DNS::fromDNSType(type);
         if(t == DNS::Types::Unknown) {
             std::cerr << "Dispatcher::lookupCache: Type don't support or unknown" << std::endl;
             return {};
@@ -94,6 +109,9 @@ std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*
             name.pop_back();
         }
 
+        // add metrics
+        addMetrics(name, t);
+
         // create key & find cache record
         Cache::Key key;
         key.domain = name;
@@ -118,7 +136,7 @@ bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
     for(const auto& rr : rrs) {
         // get type
         const ldns_rr_type type = ldns_rr_get_type(rr);
-        auto t =  DNSDispatcher::fromDNSType(type);
+        auto t =  DNS::fromDNSType(type);
         if(t == DNS::Types::Unknown) {
             std::cerr << "Dispatcher::addToCache: Type don't support or unknown" << std::endl;
             continue;
@@ -162,7 +180,7 @@ bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
         rec.ttl = ldns_rr_ttl(rr);
 
         // set class
-        rec.classType = fromDNSClassType(ldns_rr_get_class(rr));
+        rec.classType = DNS::fromDNSClassType(ldns_rr_get_class(rr));
         
         // adding rdata
         std::vector<std::string> rdata;
@@ -191,6 +209,7 @@ bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
     }
     return allOk;
 }
+
 
 // --------------------------------- FORMING PACKET ----------------------------------
 DNSParser::DNSPtr DNSDispatcher::basePacket(const DNSParser::DNSPtr& pkt) const {
@@ -523,48 +542,108 @@ bool DNSDispatcher::addRData(ldns_rr* newRr, const Cache::Record& rr) {
 }
 
 
+// ------------------------------------- METRICS ---------------------------------------
+double DNSDispatcher::getHitsPercent() const {
+    if(m_cacheHits + m_cacheMiss == 0) {
+        return {};
+    }
+    return  static_cast<double>(m_cacheHits) / 
+            static_cast<double>(m_cacheHits + m_cacheMiss) * 100.0;
+}
+uint64_t DNSDispatcher::getCacheEntries() const {
+    return m_cache.getCacheEntries();
+}
+std::vector<MetricRecords::TopDomainRecord> DNSDispatcher::getTopDomains() {
+    std::lock_guard lock{ m_mtx };
+
+    // copy for sort
+    std::vector<std::pair<std::string, uint64_t>> sorted(m_domains.begin(), m_domains.end());
+    std::sort(sorted.begin(), sorted.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+
+    uint64_t total = 0;
+    for (auto& [k, v] : sorted) total += v;
+
+    std::vector<MetricRecords::TopDomainRecord> result;
+    for (std::size_t i = 0; i < std::min(sorted.size(), std::size_t(TOP_DOMAINS_SIZE)); ++i) {
+        double percent = total > 0 ? 100.0 * sorted[i].second / total : 0.0;
+        result.emplace_back(MetricRecords::TopDomainRecord{sorted[i].first, percent, sorted[i].second});
+    }
+
+    if(m_domains.size() >= MAX_DOMAINS) {
+        m_domains.clear();
+    }
+
+    return result;
+}
+std::vector<MetricRecords::QuerryTypeRecord> DNSDispatcher::getQuerryTypes() {
+    std::lock_guard lock{m_mtx};
+
+    // copy for sort
+    std::vector<std::pair<std::string, uint64_t>> sorted(m_types.begin(), m_types.end());
+    std::sort(sorted.begin(), sorted.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+
+    uint64_t total = 0;
+    for (auto& [k, v] : sorted) total += v;
+
+    std::vector<MetricRecords::QuerryTypeRecord> result;
+    for (std::size_t i = 0; i < std::min(sorted.size(), std::size_t(QUERRY_TYPES_SIZE)); ++i) {
+        double percent = total > 0 ? 100.0 * sorted[i].second / total : 0.0;
+        result.emplace_back(MetricRecords::QuerryTypeRecord{sorted[i].first, percent});
+    }
+
+    if(m_types.size() >= MAX_TYPES) {
+        m_types.clear();
+    }
+
+    return result;
+}
+std::vector<MetricRecords::ErrorRecord> DNSDispatcher::getRecentErrors() {
+    std::lock_guard lock{ m_mtx };
+    return { m_errors.cbegin(), m_errors.cend() };
+}
+void DNSDispatcher::addMetrics(const std::string& domain, DNS::Types type) {
+    std::lock_guard lock{ m_mtx };
+    ++m_domains[domain];
+    ++m_types[DNS::typeToStr(type)];
+}
+void DNSDispatcher::addError(const std::string& domain, const std::string& error) {
+    std::lock_guard lock{ m_mtx };
+    if(m_errors.size() >= ERRORS_SIZE) {
+        m_errors.pop_front();
+    }
+    double time = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
+    m_errors.emplace_back(MetricRecords::ErrorRecord{time, domain, error});
+}
+
+
 // -------------------------------------- OTHER ----------------------------------------
 /*static*/
 bool DNSDispatcher::isAnswer(const DNSParser::DNSPtr& pkt) {
     return ldns_pkt_qr(pkt.get());
 }
 /*static*/
-DNS::Types DNSDispatcher::fromDNSType(ldns_rr_type type) {
-    switch(type) {
-        case LDNS_RR_TYPE_A:     return DNS::Types::A;
-        case LDNS_RR_TYPE_AAAA:  return DNS::Types::AAAA;
-        case LDNS_RR_TYPE_MX:    return DNS::Types::MX;
-        case LDNS_RR_TYPE_TXT:   return DNS::Types::TXT;
-        case LDNS_RR_TYPE_CNAME: return DNS::Types::CNAME;
-        case LDNS_RR_TYPE_NS:    return DNS::Types::NS;
-        default:                 return DNS::Types::Unknown;
-    };
-}
-/*static*/
-ldns_rr_type DNSDispatcher::toDNSType(DNS::Types type) {
-    switch(type) {
-        case DNS::Types::A:       return LDNS_RR_TYPE_A;
-        case DNS::Types::AAAA:    return LDNS_RR_TYPE_AAAA;
-        case DNS::Types::MX:      return LDNS_RR_TYPE_MX;
-        case DNS::Types::TXT:     return LDNS_RR_TYPE_TXT;
-        case DNS::Types::CNAME:   return LDNS_RR_TYPE_CNAME;
-        case DNS::Types::NS:      return LDNS_RR_TYPE_NS;
-        case DNS::Types::Unknown:
-        default:                  return LDNS_RR_TYPE_ANY;
-    };
-}
-/*static*/
-DNS::ClassTypes DNSDispatcher::fromDNSClassType(ldns_rr_class type) {
-    switch(type) {
-        case LDNS_RR_CLASS_IN: return DNS::ClassTypes::Internet;
-        default:               return DNS::ClassTypes::Unknown;
-    };
-}
-/*static*/
-ldns_rr_class DNSDispatcher::toDNSClassType(DNS::ClassTypes type) {
-    switch(type) {
-        case DNS::ClassTypes::Internet: return LDNS_RR_CLASS_IN;
-        case DNS::ClassTypes::Unknown:
-        default:                        return LDNS_RR_CLASS_ANY;
-    };
+std::string DNSDispatcher::getFirstDomain(ldns_rr* rr) {
+    // get domain
+    const ldns_rdf* domain = ldns_rr_owner(rr);
+    if(!domain) {
+        std::cerr << "Dispatcher::lookupCache: Invalid domain" << std::endl;
+        return "unknown";
+    }
+
+    char* cName = ldns_rdf2str(domain);
+    if(!cName) {
+        return "unknown";
+    }
+
+    std::string name(cName);
+    free(cName);
+
+    // trim
+    if(!name.empty() && name.back() == '.') {
+        name.pop_back();
+    }
+    
+    return name;
 }

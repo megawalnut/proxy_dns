@@ -22,7 +22,7 @@ private:
     std::mutex m_mtx;
     std::condition_variable m_cv;
 
-    std::atomic<bool> m_stop = false;
+    std::atomic<bool> m_stop {};
 };
 
 #endif // OUTQUEUE_H

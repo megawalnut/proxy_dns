@@ -5,7 +5,7 @@
 
 class Task {
 public:
-    virtual void execute(OutQueue& out) = 0;
+    virtual void execute(OutQueue& out, bool isOk) = 0;
     virtual ~Task() = default;
 };
 

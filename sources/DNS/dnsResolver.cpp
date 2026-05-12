@@ -1,6 +1,7 @@
 #include "../../headers/DNS/dnsResolver.h"
 
 DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
+    m_resolve.reserve(RESOLVE_SIZE);
     m_upstream.sin_family = AF_INET;
     m_upstream.sin_port = htons(UDP_DNS_PORT);
     if(inet_pton(AF_INET, addr.c_str(), &m_upstream.sin_addr) != 1) {
@@ -8,11 +9,35 @@ DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
     }
 }
 
-DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
+void DNSResolver::addResolve(std::chrono::nanoseconds duration) {
+    std::lock_guard lock{ m_mtxRes };
+    if(m_index < RESOLVE_SIZE)
+        m_resolve.push_back(duration);
+    else
+        m_resolve[m_index % RESOLVE_SIZE] = duration;   // push_front
+    ++m_index;
+}
+
+double DNSResolver::getResolve() {
+    std::lock_guard lock{ m_mtxRes };
+    if(m_resolve.empty()) {
+        return {};
+    }
+    
+    auto acc = std::accumulate(m_resolve.cbegin(), m_resolve.cend(), std::chrono::nanoseconds{});  // average
+
+    return std::chrono::duration<double, std::milli>(acc / m_resolve.size()).count();   // ms
+}
+
+Utils::Resolve::Result DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
+    auto start = std::chrono::steady_clock::now();
+    Utils::Resolve::Result res;
+
     thread_local int sock = makeSocket();
     if(sock < 0) {
         perror("DNSResolver::resolve: Socket closed");
-        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) };
+        res.error = "FORMERR";
+        return res;
     }
 
     // remember for get exactly my packet
@@ -21,7 +46,8 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     // sserialize ldns packet to wire bytes 
     const auto& [ok, question] = DNSParser::serialize(packet);
     if(ok != Utils::Parse::Status::Ok) {
-        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) };
+        res.error = "FORMERR";
+        return res;
     }
 
     // send to remote host
@@ -30,7 +56,8 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
 
     if(senSize <= 0) {
         perror("DNSResolver::resolve: Failed sendto");
-        return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
+        res.error = "SERVFAIL";
+        return res;
     }
 
     sockaddr_in from{};
@@ -48,7 +75,8 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
 
         if(recSize <= 0) {
             perror("DNSResolver::resolve: Failed recvfrom");
-            return { Utils::Parse::Status::Err, DNSParser::DNSPtr(nullptr) }; 
+            res.error = "TIMEOUT";
+            return res;
         }
 
         // validate host
@@ -67,7 +95,9 @@ DNSParser::DNSPkt DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         if(ldns_pkt_id(pkt.get()) != id) {
             continue;
         }
-        return {Utils::Parse::Status::Ok, std::move(pkt)};
+        
+        addResolve(std::chrono::steady_clock::now() - start);
+        return {Utils::Parse::Status::Ok, std::move(pkt), ""};
     }
 }
 

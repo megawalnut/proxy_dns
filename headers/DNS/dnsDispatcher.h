@@ -4,6 +4,8 @@
 #include <iostream>
 #include <ldns/ldns.h>
 #include <map>
+#include <algorithm>
+#include <deque>
 
 #include "dnsParser.h"
 #include "dnsResolver.h"
@@ -13,15 +15,28 @@
 using namespace Utils;
 
 class DNSDispatcher final {
+    static constexpr inline uint32_t MAX_DOMAINS = 1000;
+    static constexpr inline uint32_t MAX_TYPES = 7;
+    static constexpr inline uint32_t MAX_ERRORS = 100;
+    static constexpr inline uint32_t TOP_DOMAINS_SIZE = 10;
+    static constexpr inline uint32_t QUERRY_TYPES_SIZE = 4;
+    static constexpr inline uint32_t ERRORS_SIZE = 10;
 public:
     DNSDispatcher(DNSCache& cache, DNSResolver& resolver);
     
     // main method
     DNSParser::DNSPtr dispatch(const  DNSParser::DNSPtr& packet);
 
+    // metrics
+    double getHitsPercent() const;
+    uint64_t getCacheEntries() const;
+    std::vector<MetricRecords::TopDomainRecord> getTopDomains();
+    std::vector<MetricRecords::QuerryTypeRecord> getQuerryTypes();
+    std::vector<MetricRecords::ErrorRecord> getRecentErrors();
+
 private:
     // interacting with cache
-    std::vector<Cache::Record> lookupCache(const std::vector<ldns_rr*>& rr) const;
+    std::vector<Cache::Record> lookupCache(const std::vector<ldns_rr*>& rr);
     bool addToCache(const std::vector<ldns_rr*>& rrs);
     
     // forming packet
@@ -37,14 +52,22 @@ private:
     std::vector<ldns_rr*> getQuestionRRs(const DNSParser::DNSPtr& pkt) const;
     std::vector<ldns_rr*> getAnswerRRs(const DNSParser::DNSPtr& pkt) const;
 
+    // metrics
+    void addMetrics(const std::string& domain, DNS::Types type);
+    void addError(const std::string& domain, const std::string& error);
+
     // other
-    static inline DNS::Types fromDNSType(ldns_rr_type type);
-    static inline ldns_rr_type toDNSType(DNS::Types type);
-    static inline DNS::ClassTypes fromDNSClassType(ldns_rr_class type);
-    static inline ldns_rr_class toDNSClassType(DNS::ClassTypes type);
-    static bool isAnswer(const DNSParser::DNSPtr& pkt);    
+    static bool isAnswer(const DNSParser::DNSPtr& pkt);
+    static std::string getFirstDomain(ldns_rr* rr);
 
 private:
+    std::mutex m_mtx;
+    std::atomic<uint64_t> m_cacheHits {};
+    std::atomic<uint64_t> m_cacheMiss {};
+    std::map<std::string, uint64_t> m_domains;
+    std::map<std::string, uint64_t> m_types;
+    std::deque<MetricRecords::ErrorRecord> m_errors;
+
     DNSCache& m_cache;
     DNSResolver& m_resolver;
 };

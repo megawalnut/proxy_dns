@@ -13,7 +13,7 @@ public:
             Packet packet);
     ~DNSTask() = default;
     
-    void execute(OutQueue& out) override;
+    void execute(OutQueue& out, bool isOk) override;
 
 private:
     DNSDispatcher& m_disp;

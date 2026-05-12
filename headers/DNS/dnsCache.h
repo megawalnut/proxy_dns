@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <optional>
 #include <mutex>
+#include <atomic>
 
 #include "../Common/utils.h"
 
@@ -24,10 +25,14 @@ public:
     void put(const Cache::Record& rec);
     std::optional<Cache::Record> get(const Cache::Key& key);
 
+    uint64_t getCacheEntries() const;
+
 private:
     bool isExpired(const Cache::Record& rec) const;
 
 private:
+    std::atomic<uint64_t> m_cacheEntries {};
+
     std::unordered_map<Cache::Key, Cache::Record, RHash> m_records;
     std::mutex m_mtx;
 };

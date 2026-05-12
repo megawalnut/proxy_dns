@@ -5,6 +5,8 @@ DNSServer::DNSServer(DNSDispatcher& disp) : m_dispatcher(disp) {
     m_serv.sin_port = htons(UDP_DNS_PORT);
     m_serv.sin_addr.s_addr = htonl(INADDR_ANY);
 
+    m_startTime = std::chrono::steady_clock::now();
+
     m_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if(m_socket  < 0) {
         perror("DNSServer::DNSServer: Socket failed");
@@ -21,6 +23,26 @@ DNSServer::DNSServer(DNSDispatcher& disp) : m_dispatcher(disp) {
     m_sender = std::thread([this]() {
         senderLoop();
     });
+}
+
+bool DNSServer::isRunning() const {
+    return !m_stop;
+}
+
+double DNSServer::getStartTime() const {
+    return m_stop ? double{} : std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - m_startTime).count();
+}
+
+uint64_t DNSServer::getTotalRequests() const {
+    return m_threadPool.getTotalRequests();
+}
+
+double DNSServer::getLatency() {
+    return m_threadPool.getLatency();
+}
+
+double DNSServer::getErrors() const {
+    return m_threadPool.getErrors();
 }
 
 bool DNSServer::run() {
@@ -60,9 +82,8 @@ bool DNSServer::run() {
 void DNSServer::senderLoop() {
     while(true) {
         std::optional<Packet> packet = m_threadPool.popResult();
-
         if(!packet) {
-            break;
+            continue;
         }
 
         auto& receive = packet.value();

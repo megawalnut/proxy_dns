@@ -15,9 +15,9 @@
 
 class DNSServer final {
     // we specifically limit the buffer, since the proxy does not support TC
-    static constexpr std::size_t BUFFER_SIZE = 512;
-    static constexpr int UDP_DNS_PORT = 53;
-    static constexpr int QUEUE_SIZE = 10;
+    static constexpr inline std::size_t BUFFER_SIZE = 512;
+    static constexpr inline int UDP_DNS_PORT = 53;
+    static constexpr inline int QUEUE_SIZE = 10;
 
 public:
     DNSServer(DNSDispatcher& disp);
@@ -25,6 +25,12 @@ public:
 
     bool run();
 
+    bool isRunning() const;
+    double getStartTime() const;
+    uint64_t getTotalRequests() const;
+    double getLatency();
+    double getErrors() const;
+    
 private:
     void senderLoop();
 
@@ -35,7 +41,8 @@ private:
 
     ThreadPool m_threadPool;
     std::thread m_sender;
-    std::atomic<bool> m_stop = false;
+    std::atomic<bool> m_stop {};
+    std::chrono::steady_clock::time_point m_startTime;
 };
 
 #endif // DNSSERVER_H

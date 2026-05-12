@@ -2,12 +2,58 @@
 
 ThreadPool::ThreadPool(std::size_t workers) {
     m_workers.reserve(workers);
+    m_latency.reserve(LATENCY_SIZE);
 
     for(std::size_t i = 0; i < workers; ++i) {
         m_workers.emplace_back([this]() {
             workerLoop(); 
         });
     }
+}
+
+void ThreadPool::addLatency(std::chrono::nanoseconds duration) {
+    std::lock_guard lock{ m_mtxLat };
+    if(m_index < LATENCY_SIZE)
+        m_latency.push_back(duration);
+    else
+        m_latency[m_index % LATENCY_SIZE] = duration;   // push_front
+    ++m_index;
+}
+
+double ThreadPool::getLatency() {
+    std::vector<std::chrono::nanoseconds> copy;
+    {
+        std::lock_guard lock{m_mtxLat};
+        copy = m_latency;
+        if (m_index >= LATENCY_SIZE) {
+            m_latency.clear();
+            m_index = 0;
+        }
+    }
+    std::sort(copy.begin(), copy.end());
+
+    if(copy.empty()) {
+        return {};
+    }
+
+    std::size_t count = copy.size() * 0.95;
+    if(count >= copy.size()) {
+        --count;
+    }
+
+    return std::chrono::duration<double, std::milli>(copy[count]).count();  // 95 percentile
+}
+
+double ThreadPool::getTotalRequests() const {
+    return m_totalRequests;
+}
+
+double ThreadPool::getErrors() const {
+    if(m_totalRequests == 0) {
+        return {};
+    }
+    return static_cast<double>(m_totalErrors) / 
+           static_cast<double>(m_totalRequests) * 100.0;
 }
 
 void ThreadPool::workerLoop() {
@@ -29,7 +75,15 @@ void ThreadPool::workerLoop() {
             m_tasks.pop();
         }
 
-        current->execute(m_out);
+        ++m_totalRequests;
+        bool isOk;
+
+        auto start = std::chrono::steady_clock::now();
+        current->execute(m_out,isOk);
+        addLatency(std::chrono::steady_clock::now() - start);
+        if(!isOk) {
+            ++m_totalErrors;
+        }
     }
 }
 
