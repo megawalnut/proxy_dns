@@ -37,12 +37,12 @@ uint64_t DNSServer::getTotalRequests() const {
     return m_threadPool.getTotalRequests();
 }
 
-double DNSServer::getLatency() {
-    return m_threadPool.getLatency();
+uint64_t DNSServer::getTotalErrors() const {
+    return m_threadPool.getTotalErrors();
 }
 
-double DNSServer::getErrors() const {
-    return m_threadPool.getErrors();
+double DNSServer::getLatency() {
+    return m_threadPool.getLatency();
 }
 
 bool DNSServer::run() {

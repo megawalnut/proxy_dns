@@ -33,7 +33,7 @@ public:
 
         // Central Data
         std::vector<MetricRecords::TopDomainRecord> top_domains;
-        std::vector<MetricRecords::QuerryTypeRecord> querry_types;
+        std::vector<MetricRecords::QueryTypeRecord> query_types;
         std::vector<MetricRecords::ErrorRecord> recent_errors;
 
         // StatusBar
@@ -65,6 +65,8 @@ private:
     
     // for calculating
     std::atomic<uint64_t> m_prev_requests {};
+    std::atomic<uint64_t> m_prev_errors {};
+    std::condition_variable m_cv;
 
     DNSServer& m_server;
     DNSResolver& m_resolver;

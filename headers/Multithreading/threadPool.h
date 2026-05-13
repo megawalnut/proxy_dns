@@ -26,8 +26,8 @@ public:
     void enqueue(std::shared_ptr<Task> newTask);
     std::optional<OutPacket::Packet> popResult();
     double getLatency();
-    double getTotalRequests() const;
-    double getErrors() const;
+    uint64_t getTotalRequests() const;
+    uint64_t getTotalErrors() const;
     void stopQueue();
 
 private:

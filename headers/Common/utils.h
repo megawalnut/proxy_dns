@@ -121,15 +121,15 @@ namespace Utils {
             };
         }
 
-        struct QuerryTypeRecord {
+        struct QueryTypeRecord {
             std::string type;
             double percent {};
         };
         //@override
-        static inline void to_json(nlohmann::json& j, const QuerryTypeRecord& rec) {
+        static inline void to_json(nlohmann::json& j, const QueryTypeRecord& rec) {
             j = nlohmann::json{
-                {Keys::QUERRY_TYPES_TYPE,    rec.type},
-                {Keys::QUERRY_TYPES_PERCENT, rec.percent}
+                {Keys::QUERY_TYPES_TYPE,    rec.type},
+                {Keys::QUERY_TYPES_PERCENT, rec.percent}
             };
         }
 

@@ -10,7 +10,7 @@ namespace Keys {
     static constexpr inline const char* RESOLVE = "resolve_avg";
     static constexpr inline const char* ERRORS = "errors";
     static constexpr inline const char* TOP_DOMAINS = "top_domains";
-    static constexpr inline const char* QUERRY_TYPES = "querry_types";
+    static constexpr inline const char* QUERY_TYPES = "query_types";
     static constexpr inline const char* RECENT_ERRORS = "recent_errors";
     static constexpr inline const char* CACHE_ENTRIES = "cache_entries";
     static constexpr inline const char* TOTAL_REQUESTS = "total_requests";
@@ -23,8 +23,8 @@ namespace Keys {
     static constexpr inline const char* TOP_DOMAINS_PERCENT = "top_domains_percent";
     static constexpr inline const char* TOP_DOMAINS_REQUEST = "top_domains_request";
 
-    static constexpr inline const char* QUERRY_TYPES_TYPE    = "querry_types_type";
-    static constexpr inline const char* QUERRY_TYPES_PERCENT = "querry_types_percent";
+    static constexpr inline const char* QUERY_TYPES_TYPE    = "query_types_type";
+    static constexpr inline const char* QUERY_TYPES_PERCENT = "query_types_percent";
 
     static constexpr inline const char* RECENT_ERRORS_TIME = "recent_errors_time";
     static constexpr inline const char* RECENT_ERRORS_DOMAIN = "recent_errors_domain";

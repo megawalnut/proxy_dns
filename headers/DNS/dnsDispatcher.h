@@ -19,7 +19,7 @@ class DNSDispatcher final {
     static constexpr inline uint32_t MAX_TYPES = 7;
     static constexpr inline uint32_t MAX_ERRORS = 100;
     static constexpr inline uint32_t TOP_DOMAINS_SIZE = 10;
-    static constexpr inline uint32_t QUERRY_TYPES_SIZE = 4;
+    static constexpr inline uint32_t QUERY_TYPES_SIZE = 4;
     static constexpr inline uint32_t ERRORS_SIZE = 10;
 public:
     DNSDispatcher(DNSCache& cache, DNSResolver& resolver);
@@ -31,7 +31,7 @@ public:
     double getHitsPercent() const;
     uint64_t getCacheEntries() const;
     std::vector<MetricRecords::TopDomainRecord> getTopDomains();
-    std::vector<MetricRecords::QuerryTypeRecord> getQuerryTypes();
+    std::vector<MetricRecords::QueryTypeRecord> getQueryTypes();
     std::vector<MetricRecords::ErrorRecord> getRecentErrors();
 
 private:

@@ -25,10 +25,8 @@ double ThreadPool::getLatency() {
     {
         std::lock_guard lock{m_mtxLat};
         copy = m_latency;
-        if (m_index >= LATENCY_SIZE) {
-            m_latency.clear();
-            m_index = 0;
-        }
+        m_latency.clear();
+        m_index = 0;
     }
     std::sort(copy.begin(), copy.end());
 
@@ -44,16 +42,12 @@ double ThreadPool::getLatency() {
     return std::chrono::duration<double, std::milli>(copy[count]).count();  // 95 percentile
 }
 
-double ThreadPool::getTotalRequests() const {
+uint64_t ThreadPool::getTotalRequests() const {
     return m_totalRequests;
 }
 
-double ThreadPool::getErrors() const {
-    if(m_totalRequests == 0) {
-        return {};
-    }
-    return static_cast<double>(m_totalErrors) / 
-           static_cast<double>(m_totalRequests) * 100.0;
+uint64_t ThreadPool::getTotalErrors() const {
+    return m_totalErrors;
 }
 
 void ThreadPool::workerLoop() {
@@ -79,7 +73,7 @@ void ThreadPool::workerLoop() {
         bool isOk;
 
         auto start = std::chrono::steady_clock::now();
-        current->execute(m_out,isOk);
+        current->execute(m_out, isOk);
         addLatency(std::chrono::steady_clock::now() - start);
         if(!isOk) {
             ++m_totalErrors;

@@ -28,10 +28,8 @@ double DNSResolver::getResolve() {
 
     double res = std::chrono::duration<double, std::milli>(acc / m_resolve.size()).count();   // ms
 
-    if (m_index >= RESOLVE_SIZE) {
-        m_resolve.clear();
-        m_index = 0;
-    }
+    m_resolve.clear();
+    m_index = 0;
 
     return res;
 }

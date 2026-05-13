@@ -577,7 +577,7 @@ std::vector<MetricRecords::TopDomainRecord> DNSDispatcher::getTopDomains() {
 
     return result;
 }
-std::vector<MetricRecords::QuerryTypeRecord> DNSDispatcher::getQuerryTypes() {
+std::vector<MetricRecords::QueryTypeRecord> DNSDispatcher::getQueryTypes() {
     std::lock_guard lock{m_mtx};
 
     // copy for sort
@@ -588,10 +588,10 @@ std::vector<MetricRecords::QuerryTypeRecord> DNSDispatcher::getQuerryTypes() {
     uint64_t total = 0;
     for (auto& [k, v] : sorted) total += v;
 
-    std::vector<MetricRecords::QuerryTypeRecord> result;
-    for (std::size_t i = 0; i < std::min(sorted.size(), std::size_t(QUERRY_TYPES_SIZE)); ++i) {
+    std::vector<MetricRecords::QueryTypeRecord> result;
+    for (std::size_t i = 0; i < std::min(sorted.size(), std::size_t(QUERY_TYPES_SIZE)); ++i) {
         double percent = total > 0 ? 100.0 * sorted[i].second / total : 0.0;
-        result.emplace_back(MetricRecords::QuerryTypeRecord{sorted[i].first, percent});
+        result.emplace_back(MetricRecords::QueryTypeRecord{sorted[i].first, percent});
     }
 
     if(m_types.size() >= MAX_TYPES) {

@@ -15,6 +15,7 @@ MetricsManager::MetricsManager(DNSServer& server, DNSResolver& resolv,
 
 MetricsManager::~MetricsManager() {
     m_stop = true;
+    m_cv.notify_one();
 
     if(m_collector.joinable()) {
         m_collector.join();
@@ -23,6 +24,7 @@ MetricsManager::~MetricsManager() {
 
 void MetricsManager::startCollection() {
     auto next = std::chrono::steady_clock::now();
+    std::mutex mtx;
 
     while(!m_stop) {
         next += std::chrono::seconds(1);
@@ -32,8 +34,9 @@ void MetricsManager::startCollection() {
         if(!sendSnapshot(toJSON(sn))) {
             
         }
+        std::unique_lock lock{ mtx };
+        m_cv.wait_until(lock, next, [this]() { return m_stop == true; });
 
-        std::this_thread::sleep_until(next);
     }
 }
 
@@ -42,16 +45,24 @@ MetricsManager::Snapshot MetricsManager::createSnapshot() {
 
     status.running = m_server.isRunning();                  // bool
     status.uptime_sec = m_server.getStartTime();            // ms
+
     auto requests = m_server.getTotalRequests();
     status.requests_sec = requests - m_prev_requests;       // reqs/sec
     m_prev_requests = requests;
+    
     status.cache_hit = m_dispatcher.getHitsPercent();       // percent
     status.latency_p95 = m_server.getLatency();             // ms
     status.resolve_avg = m_resolver.getResolve();           // ms
-    status.errors = m_server.getErrors();                   // percent
+
+    auto errors = m_server.getTotalErrors();
+    double reqs = status.requests_sec;
+    double errs = errors - m_prev_errors;
+    status.errors = reqs > 0 ? errs / reqs * 100.0 
+                             : 0.0;                         // percent
+    m_prev_errors = errors;
 
     status.top_domains = m_dispatcher.getTopDomains();      // top domains
-    status.querry_types = m_dispatcher.getQuerryTypes();    // querry types
+    status.query_types = m_dispatcher.getQueryTypes();      // query types
     status.recent_errors = m_dispatcher.getRecentErrors();  // error record
 
     status.cache_entries = m_dispatcher.getCacheEntries();  // count
@@ -75,7 +86,7 @@ nlohmann::json MetricsManager::toJSON(const Snapshot& sn) {
     json[Keys::RESOLVE] = sn.resolve_avg;
     json[Keys::ERRORS] = sn.errors;
     json[Keys::TOP_DOMAINS] = sn.top_domains;
-    json[Keys::QUERRY_TYPES] = sn.querry_types;
+    json[Keys::QUERY_TYPES] = sn.query_types;
     json[Keys::RECENT_ERRORS] = sn.recent_errors;
     json[Keys::CACHE_ENTRIES] = sn.cache_entries;
     json[Keys::TOTAL_REQUESTS] = sn.total_requests;

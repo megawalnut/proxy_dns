@@ -28,8 +28,8 @@ public:
     bool isRunning() const;
     double getStartTime() const;
     uint64_t getTotalRequests() const;
+    uint64_t getTotalErrors() const;
     double getLatency();
-    double getErrors() const;
     
 private:
     void senderLoop();

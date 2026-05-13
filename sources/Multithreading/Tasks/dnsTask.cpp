@@ -7,7 +7,7 @@ DNSTask::DNSTask(DNSDispatcher& disp,
                  m_packet(packet) 
                  {}
 
-void DNSTask::execute(OutQueue& out, bool isOk) {
+void DNSTask::execute(OutQueue& out, bool& isOk) {
     std::cout << "Receive packet size: " << m_packet.size << std::endl;
     isOk = false;
     // parsing qPacket
