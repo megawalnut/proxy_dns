@@ -1,21 +1,20 @@
 #include "../../headers/Metrics/metricsManager.h"
 
-MetricsManager::MetricsManager(DNSServer& server, DNSResolver& resolv, DNSDispatcher& disp)
+MetricsManager::MetricsManager(DNSServer& server, DNSResolver& resolv,
+                DNSDispatcher& disp, Clients& clients)
     :
     m_server(server),
     m_resolver(resolv),
     m_dispatcher(disp),
-    m_timer(m_io)
+    m_clients(clients)
 {
-    startCollection();
-    
     m_collector = std::thread([this]() {
-        m_io.run();
+        startCollection();
     });
 }
 
 MetricsManager::~MetricsManager() {
-    m_io.stop();
+    m_stop = true;
 
     if(m_collector.joinable()) {
         m_collector.join();
@@ -23,39 +22,19 @@ MetricsManager::~MetricsManager() {
 }
 
 void MetricsManager::startCollection() {
-    m_timer.expires_after(std::chrono::seconds(1));
+    auto next = std::chrono::steady_clock::now();
 
-    m_timer.async_wait([this](const boost::system::error_code& ec) {
-        if(!ec) {
-            Snapshot sn = createSnapshot();
-            sendSnapshot(toJSON(sn));
+    while(!m_stop) {
+        next += std::chrono::seconds(1);
 
-            startCollection();
+        auto sn = createSnapshot();
+
+        if(!sendSnapshot(toJSON(sn))) {
+            
         }
-    });
-}
 
-/*static*/
-nlohmann::json MetricsManager::toJSON(const Snapshot& sn) {
-    nlohmann::json json;
-
-    json[Keys::UPTIME] = sn.uptime_sec;
-    json[Keys::RUNNING] = sn.running;
-    json[Keys::REQUESTS_SEC] = sn.requests_sec;
-    json[Keys::CACHE_HITS] = sn.cache_hit;
-    json[Keys::LATENCY_P95] = sn.latency_p95;
-    json[Keys::RESOLVE] = sn.resolve_avg;
-    json[Keys::ERRORS] = sn.errors;
-    json[Keys::TOP_DOMAINS] = sn.top_domains;
-    json[Keys::QUERRY_TYPES] = sn.querry_types;
-    json[Keys::RECENT_ERRORS] = sn.recent_errors;
-    json[Keys::CACHE_ENTRIES] = sn.cache_entries;
-    json[Keys::TOTAL_REQUESTS] = sn.total_requests;
-    json[Keys::RAM] = sn.ram;
-    json[Keys::CPU] = sn.cpu;
-    json[Keys::THREADS] = sn.threads;
-
-    return json;
+        std::this_thread::sleep_until(next);
+    }
 }
 
 MetricsManager::Snapshot MetricsManager::createSnapshot() {
@@ -84,8 +63,49 @@ MetricsManager::Snapshot MetricsManager::createSnapshot() {
     return status;
 }
 
-void MetricsManager::sendSnapshot(const nlohmann::json& sn) const {
+/*static*/
+nlohmann::json MetricsManager::toJSON(const Snapshot& sn) {
+    nlohmann::json json;
 
+    json[Keys::UPTIME] = sn.uptime_sec;
+    json[Keys::RUNNING] = sn.running;
+    json[Keys::REQUESTS_SEC] = sn.requests_sec;
+    json[Keys::CACHE_HITS] = sn.cache_hit;
+    json[Keys::LATENCY_P95] = sn.latency_p95;
+    json[Keys::RESOLVE] = sn.resolve_avg;
+    json[Keys::ERRORS] = sn.errors;
+    json[Keys::TOP_DOMAINS] = sn.top_domains;
+    json[Keys::QUERRY_TYPES] = sn.querry_types;
+    json[Keys::RECENT_ERRORS] = sn.recent_errors;
+    json[Keys::CACHE_ENTRIES] = sn.cache_entries;
+    json[Keys::TOTAL_REQUESTS] = sn.total_requests;
+    json[Keys::RAM] = sn.ram;
+    json[Keys::CPU] = sn.cpu;
+    json[Keys::THREADS] = sn.threads;
+
+    return json;
+}
+
+bool MetricsManager::sendSnapshot(const nlohmann::json& js) const {
+    std::vector<int> clients = m_clients.getClients();
+    std::vector<int> remove;
+    bool allOk = true;
+
+    std::string data = js.dump() + "\n";
+
+    for(const auto& client : clients) {
+        ssize_t senSize = send(client, data.c_str(), data.size(), MSG_NOSIGNAL);
+
+        if(senSize <= 0) {
+            perror("MetricsManager::sendSnapshot: Failed send");
+            remove.push_back(client);
+            allOk = false;
+            continue;
+        }
+    }
+    m_clients.erase(remove);
+
+    return allOk;
 }
 
 double MetricsManager::getCPULoad() const {

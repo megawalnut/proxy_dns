@@ -1,7 +1,7 @@
 #include "../../../headers/Multithreading/Tasks/dnsTask.h"
 
 DNSTask::DNSTask(DNSDispatcher& disp, 
-                 Packet packet) 
+                 OutPacket::Packet packet) 
                  : 
                  m_disp(disp), 
                  m_packet(packet) 
@@ -31,7 +31,7 @@ void DNSTask::execute(OutQueue& out, bool isOk) {
         return;
     }
     
-    Packet packet = m_packet;
+    OutPacket::Packet packet = m_packet;
     packet.data = answer;
     packet.size = answer.size();
     isOk = true;

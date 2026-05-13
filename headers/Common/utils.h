@@ -6,6 +6,7 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 #include <ldns/ldns.h>
+#include <arpa/inet.h>
 
 #include "keys.h"
 
@@ -147,11 +148,11 @@ namespace Utils {
         }
     };
 
-    namespace Resolve {
-        struct Result {
-            Parse::Status status = Parse::Status::Err;
-            DNSParser::DNSPtr packet = DNSParser::DNSPtr(nullptr);
-            std::string error = "";
+    namespace OutPacket {
+        struct Packet {
+            std::vector<uint8_t> data;
+            std::size_t size = 0;
+            sockaddr_in client;
         };
     };
 };

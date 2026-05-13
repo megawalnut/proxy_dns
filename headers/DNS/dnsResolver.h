@@ -11,15 +11,23 @@
 #include "dnsParser.h"
 #include "../Common/utils.h"
 
+using namespace Utils;
+
 class DNSResolver final {
     static constexpr inline std::size_t BUFFER_SIZE = 512;
     static constexpr inline int UDP_DNS_PORT = 53;
     static constexpr inline int RESOLVE_SIZE = 1000;
 
-public: 
+public:
+    struct Packet {
+        Parse::Status status = Parse::Status::Err;
+        DNSParser::DNSPtr packet = DNSParser::DNSPtr(nullptr);
+        std::string error = "";
+    };
+
     DNSResolver(const std::string& addr);
 
-    Utils::Resolve::Result resolve(const DNSParser::DNSPtr& packet);
+    DNSResolver::Packet resolve(const DNSParser::DNSPtr& packet);
     double getResolve();
 
 private:

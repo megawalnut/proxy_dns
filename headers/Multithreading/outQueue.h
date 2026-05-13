@@ -7,17 +7,18 @@
 #include <optional>
 #include <atomic>
 
-#include "../DNS/packet.h"
+#include "../../headers/Common/utils.h" 
+
+using namespace Utils;
 
 class OutQueue final {
 public:
-    ~OutQueue();
-    
-    void push(Packet packet);
-    std::optional<Packet> pop();
+    void push(OutPacket::Packet packet);
+    void stop();
+    std::optional<OutPacket::Packet> pop();
     
 private:
-    std::queue<Packet> m_out;
+    std::queue<OutPacket::Packet> m_out;
 
     std::mutex m_mtx;
     std::condition_variable m_cv;

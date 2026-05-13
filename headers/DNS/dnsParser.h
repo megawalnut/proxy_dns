@@ -8,6 +8,8 @@
 
 #include "../Common/utils.h"
 
+using namespace Utils;
+
 class DNSParser final {
 public:
     //deleter form ldns_packet
@@ -20,8 +22,8 @@ public:
     };
 
     using DNSPtr = std::unique_ptr<ldns_pkt, PktDeleter>;
-    using DNSPkt = std::pair<Utils::Parse::Status, DNSPtr>;
-    using DNSWire = std::pair<Utils::Parse::Status, std::vector<uint8_t>>;
+    using DNSPkt = std::pair<Parse::Status, DNSPtr>;
+    using DNSWire = std::pair<Parse::Status, std::vector<uint8_t>>;
 
     static DNSPkt deserialize(const std::vector<uint8_t>& packet, const std::size_t size);
     static DNSWire serialize(const DNSPtr& packet);

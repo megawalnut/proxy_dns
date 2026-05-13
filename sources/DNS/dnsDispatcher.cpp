@@ -35,7 +35,11 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
         return makeErrPacket(aPacket, LDNS_RCODE_FORMERR);
     }
 
+    // add metrics
     std::string errDomain = getFirstDomain(resources[0]);
+    const ldns_rr_type type = ldns_rr_get_type(resources[0]);
+    auto t =  DNS::fromDNSType(type);
+    addMetrics(errDomain, t);
 
     // check cache
     std::vector<Cache::Record> result = lookupCache(resources);
@@ -47,7 +51,7 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
     ++m_cacheMiss;
         
     // resolving + creating answer
-    Resolve::Result res;
+    DNSResolver::Packet res;
     res = m_resolver.resolve(clientPacket);
     if(res.status != Parse::Status::Ok) {
         std::cerr << "DNSDispatcher::dispatch: Failed resolving" << std::endl;
@@ -108,9 +112,6 @@ std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*
         if(!name.empty() && name.back() == '.') {
             name.pop_back();
         }
-
-        // add metrics
-        addMetrics(name, t);
 
         // create key & find cache record
         Cache::Key key;

@@ -7,17 +7,17 @@
 
 #include "../DNS/dnsParser.h"
 #include "../DNS/dnsDispatcher.h"
-#include "../DNS/packet.h"
 #include "../Multithreading/threadPool.h"
 #include "../Multithreading/Tasks/task.h"
 #include "../Multithreading/Tasks/dnsTask.h"
 #include "../Common/utils.h"
 
+using namespace Utils;
+
 class DNSServer final {
     // we specifically limit the buffer, since the proxy does not support TC
     static constexpr inline std::size_t BUFFER_SIZE = 512;
     static constexpr inline int UDP_DNS_PORT = 53;
-    static constexpr inline int QUEUE_SIZE = 10;
 
 public:
     DNSServer(DNSDispatcher& disp);

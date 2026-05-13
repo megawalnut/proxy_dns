@@ -9,11 +9,11 @@
 #include <fstream>
 #include <sys/resource.h>
 #include <nlohmann/json.hpp>
-#include <boost/asio.hpp>
 
 #include "../../headers/Net/dnsServer.h"
 #include "../../headers/DNS/dnsResolver.h"
 #include "../../headers/DNS/dnsDispatcher.h"
+#include "../../headers/Net/clients.h"
 #include "../../headers/Common/utils.h"
 #include "../../headers/Common/keys.h"
 
@@ -45,22 +45,23 @@ public:
     };
 
 public:
-    MetricsManager(DNSServer& server, DNSResolver& resolv, DNSDispatcher& disp);
+    MetricsManager(DNSServer& server, DNSResolver& resolv, 
+                        DNSDispatcher& disp, Clients& clients);
     ~MetricsManager();
 
 private:
     void startCollection();
-    static nlohmann::json toJSON(const Snapshot& sn);
     Snapshot createSnapshot();
-    void sendSnapshot(const nlohmann::json& js) const;
+    static nlohmann::json toJSON(const Snapshot& sn);
+    bool sendSnapshot(const nlohmann::json& js) const;
 
     double getCPULoad() const;
     uint32_t getStatusMetric(const std::string& metric) const;
     
 
 private:
-    std::mutex m_mtx;
     std::thread m_collector;
+    std::atomic<bool> m_stop {};
     
     // for calculating
     std::atomic<uint64_t> m_prev_requests {};
@@ -68,9 +69,7 @@ private:
     DNSServer& m_server;
     DNSResolver& m_resolver;
     DNSDispatcher& m_dispatcher;
-
-    boost::asio::io_context m_io;
-    boost::asio::steady_timer m_timer;
+    Clients& m_clients;
 };
 
 #endif // METRICSMANAGER_H

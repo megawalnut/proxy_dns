@@ -53,7 +53,7 @@ bool DNSServer::run() {
 
     std::cout << "DNSServer::run: starting..." << std::endl;
     while(!m_stop) {
-        Packet packet;
+        OutPacket::Packet packet;
         packet.data.resize(BUFFER_SIZE);
 
         socklen_t len = sizeof(packet.client);
@@ -81,9 +81,9 @@ bool DNSServer::run() {
 
 void DNSServer::senderLoop() {
     while(true) {
-        std::optional<Packet> packet = m_threadPool.popResult();
+        std::optional<OutPacket::Packet> packet = m_threadPool.popResult();
         if(!packet) {
-            continue;
+            break;
         }
 
         auto& receive = packet.value();
@@ -100,12 +100,14 @@ void DNSServer::senderLoop() {
 
 DNSServer::~DNSServer() {
     m_stop = true;
+    m_threadPool.stopQueue();
 
     if(m_socket >= 0) {
         shutdown(m_socket, SHUT_RDWR);
         close(m_socket);
     }
     
-    if(m_sender.joinable())
+    if(m_sender.joinable()) {
         m_sender.join();
+    }
 }

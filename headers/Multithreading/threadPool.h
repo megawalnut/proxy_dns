@@ -9,9 +9,12 @@
 #include <condition_variable>
 #include <algorithm>
 
-
+#include "../../headers/Common/utils.h"
 #include "outQueue.h"
 #include "Tasks/task.h"
+
+
+using namespace Utils;
 
 class ThreadPool {
     static constexpr inline uint32_t WORKERS_SIZE = 6;
@@ -21,10 +24,11 @@ public:
     ~ThreadPool();
 
     void enqueue(std::shared_ptr<Task> newTask);
-    std::optional<Packet> popResult();
+    std::optional<OutPacket::Packet> popResult();
     double getLatency();
     double getTotalRequests() const;
     double getErrors() const;
+    void stopQueue();
 
 private:
     void workerLoop();

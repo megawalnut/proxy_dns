@@ -26,12 +26,19 @@ double DNSResolver::getResolve() {
     
     auto acc = std::accumulate(m_resolve.cbegin(), m_resolve.cend(), std::chrono::nanoseconds{});  // average
 
-    return std::chrono::duration<double, std::milli>(acc / m_resolve.size()).count();   // ms
+    double res = std::chrono::duration<double, std::milli>(acc / m_resolve.size()).count();   // ms
+
+    if (m_index >= RESOLVE_SIZE) {
+        m_resolve.clear();
+        m_index = 0;
+    }
+
+    return res;
 }
 
-Utils::Resolve::Result DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
+DNSResolver::Packet DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     auto start = std::chrono::steady_clock::now();
-    Utils::Resolve::Result res;
+    Packet res;
 
     thread_local int sock = makeSocket();
     if(sock < 0) {
@@ -45,7 +52,7 @@ Utils::Resolve::Result DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
 
     // sserialize ldns packet to wire bytes 
     const auto& [ok, question] = DNSParser::serialize(packet);
-    if(ok != Utils::Parse::Status::Ok) {
+    if(ok != Parse::Status::Ok) {
         res.error = "FORMERR";
         return res;
     }
@@ -87,7 +94,7 @@ Utils::Resolve::Result DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         }
 
         auto [ok, pkt] = DNSParser::deserialize(answer, recSize);
-        if(ok != Utils::Parse::Status::Ok) {
+        if(ok != Parse::Status::Ok) {
             continue;
         }
 
@@ -97,7 +104,7 @@ Utils::Resolve::Result DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         }
         
         addResolve(std::chrono::steady_clock::now() - start);
-        return {Utils::Parse::Status::Ok, std::move(pkt), ""};
+        return {Parse::Status::Ok, std::move(pkt), ""};
     }
 }
 

@@ -8,7 +8,6 @@ void DNSCache::put(const Cache::Record& rec) {
         std::lock_guard lock(m_mtx);
         m_records[rec.key] = tmp;
     }
-    ++m_cacheEntries;
 }
 
 std::optional<Cache::Record> DNSCache::get(const Cache::Key& key) {
@@ -22,7 +21,6 @@ std::optional<Cache::Record> DNSCache::get(const Cache::Key& key) {
     if(isExpired(it->second)) {
         std::cerr << "DNSCache::get: Entry TTL finished. Delete entry" << std::endl;
         m_records.erase(it);
-        --m_cacheEntries;
         return std::nullopt;
     }
 
@@ -34,6 +32,7 @@ bool DNSCache::isExpired(const Cache::Record& rec) const {
            std::chrono::seconds(rec.ttl);   // if now > last valid time 
 };
 
-uint64_t DNSCache::getCacheEntries() const {
-    return m_cacheEntries;
+uint64_t DNSCache::getCacheEntries() {
+    std::lock_guard lock(m_mtx);
+    return m_records.size();
 }

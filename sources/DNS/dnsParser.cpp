@@ -7,11 +7,11 @@ DNSParser::DNSPkt DNSParser::deserialize(const std::vector<uint8_t>& packet, con
 
     if(ldns_wire2pkt(&pkt, packet.data(), size) != LDNS_STATUS_OK) {
         std::cerr << "DNSParser::deserialize: Failed deserialize packet" << std::endl;
-        return { Utils::Parse::Status::Err, DNSPtr(nullptr) };
+        return { Parse::Status::Err, DNSPtr(nullptr) };
     }
 
     std::cout << "DNSParser::deserialize: Success deserialize" << std::endl;
-    return { Utils::Parse::Status::Ok, DNSPtr(pkt) };
+    return { Parse::Status::Ok, DNSPtr(pkt) };
 }
 
 /*static*/
@@ -22,12 +22,12 @@ DNSParser::DNSWire DNSParser::serialize(const DNSPtr& packet) {
     ldns_status ok = ldns_pkt2wire(&wire, packet.get(), &wireSize);
     if(ok != LDNS_STATUS_OK || !wire || wireSize == 0) {
         std::cerr << "DNSParser::serialize: Failed serialize packet" << std::endl;
-        return { Utils::Parse::Status::Err, {} };
+        return { Parse::Status::Err, {} };
     }
 
     std::cout << "DNSParser::serialize: Success serialize" << std::endl;
     std::vector<uint8_t> vec(wire, wire + wireSize);
     free(wire);
     
-    return { Utils::Parse::Status::Ok, vec };
+    return { Parse::Status::Ok, vec };
 }

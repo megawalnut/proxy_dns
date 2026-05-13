@@ -100,8 +100,12 @@ void ThreadPool::enqueue(std::shared_ptr<Task> task) {
     m_cv.notify_one();
 }
 
-std::optional<Packet> ThreadPool::popResult() {
+std::optional<OutPacket::Packet> ThreadPool::popResult() {
     return m_out.pop();
+}
+
+void ThreadPool::stopQueue() {
+    m_out.stop();
 }
 
 ThreadPool::~ThreadPool() {
