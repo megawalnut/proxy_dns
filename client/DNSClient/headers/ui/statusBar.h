@@ -6,15 +6,23 @@
 #include <QSvgWidget>
 #include <QStatusBar>
 
-#include "../../headers/themes/darkTheme.h"
+#include "../../headers/common/utils.h"
 
 class StatusBar : public QStatusBar {
     Q_OBJECT
 public:
     explicit StatusBar(QWidget* parent = nullptr);
+    void updateState(Utils::Areas::StatusBarData);
+    void disableUI();
 
 private:
     void init();
+
+    void setCacheEntries(uint64_t entries);
+    void setTotalRequests(uint64_t reqsts);
+    void setRam(uint64_t rap);
+    void setCpu(double cpu);
+    void setThreads(uint32_t thrds);
 
 private:
     QLabel* m_cacheEntries = nullptr;

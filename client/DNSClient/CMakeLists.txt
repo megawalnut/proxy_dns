@@ -9,8 +9,14 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets PrintSupport Svg SvgWidgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS
+    Network
+    Widgets
+    PrintSupport
+    Svg
+    SvgWidgets
+)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/headers
@@ -22,13 +28,19 @@ set(PROJECT_SOURCES
     #---------------- SOURCES ---------------
     sources/main.cpp
     sources/mainwindow.cpp
+    #------------ CONTROLLER -----------
+    sources/controller/dashboardController.cpp
+    #-------------- MODEL --------------
+    sources/models/errorsModel.cpp
+    #-------------- SERVER -------------
+    sources/net/client.cpp
     #-------------- THEMES -------------
     sources/themes/darkTheme.cpp
     #---------------- UI ---------------
     sources/ui/toolBar.cpp
     sources/ui/statusBar.cpp
     sources/ui/centralWidget.cpp
-    #------------ Dashboar W -----------
+    #----------- Dashboar WGT ----------
     sources/ui/centralDashboardWidgets/requestsChartWidget.cpp
     sources/ui/centralDashboardWidgets/cacheHitRate.cpp
     sources/ui/centralDashboardWidgets/latencyP95.cpp
@@ -36,19 +48,26 @@ set(PROJECT_SOURCES
     sources/ui/centralDashboardWidgets/querryTypes.cpp
     sources/ui/centralDashboardWidgets/recentErrors.cpp
     sources/ui/centralDashboardWidgets/dnsTypeCardWidget.cpp
-    #-------------- Model --------------
-    sources/models/errorsModel.cpp
 
     #________________________________________
     #---------------- HEADERS ---------------
     headers/mainwindow.h
+    #-------------- COMMON -------------
+    headers/common/keys.h
+    headers/common/utils.h
+    #------------ CONTROLLER -----------
+    headers/controller/dashboardController.h
+    #-------------- MODEL --------------
+    headers/models/errorsModel.h
+    #-------------- SERVER -------------
+    headers/net/client.h
     #-------------- THEMES -------------
     headers/themes/darkTheme.h
     #---------------- UI ---------------
     headers/ui/toolBar.h
     headers/ui/statusBar.h
     headers/ui/centralWidget.h
-    #------------ Dashboar W -----------
+    #----------- Dashboar WGT ----------
     headers/ui/centralDashboardWidgets/requestsChartWidget.h
     headers/ui/centralDashboardWidgets/cacheHitRate.h
     headers/ui/centralDashboardWidgets/latencyP95.h
@@ -56,8 +75,6 @@ set(PROJECT_SOURCES
     headers/ui/centralDashboardWidgets/querryTypes.h
     headers/ui/centralDashboardWidgets/recentErrors.h
     headers/ui/centralDashboardWidgets/dnsTypeCardWidget.h
-    #-------------- Model --------------
-    headers/models/errorsModel.h
 
     #________________________________________
     #-------------- Dependencies ------------
@@ -93,6 +110,7 @@ target_link_libraries(DNSClient PRIVATE
     Qt${QT_VERSION_MAJOR}::PrintSupport
     Qt${QT_VERSION_MAJOR}::Svg
     Qt${QT_VERSION_MAJOR}::SvgWidgets
+    Qt${QT_VERSION_MAJOR}::Network
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

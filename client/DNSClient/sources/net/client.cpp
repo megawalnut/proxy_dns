@@ -54,13 +54,7 @@ void Client::onReadyRead() {
             continue;
         }
 
-        qDebug() << "------------------------------------------------------------------------";
-        QJsonObject obj = json.object();
-        for (auto it = obj.begin(); it != obj.end(); ++it) {
-            qDebug() << it.key() << ":" << it.value();
-        }
-
-        emit receivePacket(json.object());
+        emit packetReady(json.object());
     }
 }
 
@@ -70,6 +64,7 @@ void Client::onConnected() {
                     .arg(m_portNum);
 
     m_reconnecting = false;
+    emit startUI();
 }
 
 void Client::onErrorOccurred(QAbstractSocket::SocketError err) {
@@ -106,6 +101,7 @@ void Client::onDisconnected() {
 
 void Client::scheduleReconnect() {
     qWarning() << "Client::scheduleReconnect";
+    emit stopUI();
     m_reconnecting = true;
 
     QTimer::singleShot(5000, this, [this]() {

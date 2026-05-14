@@ -31,3 +31,11 @@ void CentralWidget::init() {
         m_grid->setRowStretch(i, 1);
     }
 }
+
+void CentralWidget::updateState(Utils::Areas::CentralData cd) {
+
+}
+
+void CentralWidget::disableUI() {
+
+}

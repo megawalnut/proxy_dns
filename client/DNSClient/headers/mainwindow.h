@@ -9,20 +9,35 @@
 #include <QLabel>
 #include <QGridLayout>
 
+#include "../headers/controller/dashboardController.h"
+#include "../headers/common/utils.h"
+
 #include "../headers/ui/toolBar.h"
 #include "../headers/ui/statusBar.h"
 #include "../headers/ui/centralWidget.h"
 
+using namespace Utils;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(DashboardController* ctrl, QWidget* parent = nullptr);
 
 private:
     void init();
+    void setupConnection();
+
+private slots:
+    void onStartUI();
+    void onStopUI();
+
+    void onToolBarUpdate(Areas::ToolBarData);
+    void onCentralDataUpdate(Areas::CentralData);
+    void onStatusBarUpdate(Areas::StatusBarData);
 
 private:
+    DashboardController* m_controller = nullptr;
+
     // toolBar
     ToolBar* m_toolBar = nullptr;
 

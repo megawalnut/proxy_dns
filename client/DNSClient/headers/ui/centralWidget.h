@@ -5,6 +5,8 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
+#include  "../headers/common/utils.h"
+
 #include "../headers/ui/centralDashboardWidgets/requestsChartWidget.h"
 #include "../headers/ui/centralDashboardWidgets/cacheHitRate.h"
 #include "../headers/ui/centralDashboardWidgets/latencyP95.h"
@@ -12,11 +14,12 @@
 #include "../headers/ui/centralDashboardWidgets/querryTypes.h"
 #include "../headers/ui/centralDashboardWidgets/recentErrors.h"
 
-
 class CentralWidget : public QWidget {
     Q_OBJECT
 public:
     explicit CentralWidget(QWidget* parent = nullptr);
+    void updateState(Utils::Areas::CentralData);
+    void disableUI();
 
 private:
     void init();

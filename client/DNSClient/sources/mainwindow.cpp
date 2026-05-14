@@ -1,8 +1,22 @@
 #include "../headers/mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-    //setMinimumSize(540, 400);
+MainWindow::MainWindow(DashboardController* ctrl, QWidget *parent)
+    :
+    QMainWindow(parent),
+    m_controller(ctrl)
+{
     init();
+    setupConnection();
+}
+
+void MainWindow::onStartUI() {
+    show();
+}
+
+void MainWindow::onStopUI() {
+    m_toolBar->disableUI();
+    m_centralWidget->disableUI();
+    m_statusBar->disableUI();
 }
 
 void MainWindow::init() {
@@ -19,4 +33,31 @@ void MainWindow::init() {
     // ---------------------- StatusBar -------------------------
     m_statusBar = new StatusBar(this);
     setStatusBar(m_statusBar);
+}
+
+void MainWindow::setupConnection() {
+    connect(m_controller, &DashboardController::startUI,
+            this, &MainWindow::onStartUI);
+
+    connect(m_controller, &DashboardController::stopUI,
+            this, &MainWindow::onStopUI);
+
+    connect(m_controller, &DashboardController::toolBarUpdate,
+            this, &MainWindow::onToolBarUpdate);
+
+    connect(m_controller, &DashboardController::centralDataUpdate,
+            this, &MainWindow::onCentralDataUpdate);
+
+    connect(m_controller, &DashboardController::statusBarUpdate,
+            this, &MainWindow::onStatusBarUpdate);
+}
+
+void MainWindow::onToolBarUpdate(Areas::ToolBarData td) {
+    m_toolBar->updateState(td);
+}
+void MainWindow::onCentralDataUpdate(Areas::CentralData cd) {
+    m_centralWidget->updateState(cd);
+}
+void MainWindow::onStatusBarUpdate(Areas::StatusBarData sd) {
+    m_statusBar->updateState(sd);
 }
