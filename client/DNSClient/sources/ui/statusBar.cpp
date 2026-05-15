@@ -123,6 +123,6 @@ void StatusBar::setCpu(double cpu) {
     m_cpu->setText(QString("%1 %").arg(cpu, 0, 'f', 1));
 }
 void StatusBar::setThreads(uint32_t threads) {
-    m_threads->setText(QString("%1 active").arg(QString::number(threads, 10)));
+    m_threads->setText(QString("%1 total").arg(QString::number(threads, 10)));
 }
 

@@ -62,6 +62,9 @@ namespace Utils {
         };
 
         struct CentralData {
+            uint32_t requests_sec {};
+            double cache_hit {};
+            double latency_p95 {};
             std::vector<MetricRecords::TopDomainRecord> top_domains;
             std::vector<MetricRecords::QueryTypeRecord> query_types;
             std::vector<MetricRecords::ErrorRecord> recent_errors;
@@ -153,6 +156,10 @@ namespace Utils {
 
     static inline Areas::CentralData parseCentralData(const MetricRecords::Snapshot& sn/*std::move*/) {
         Areas::CentralData cd;
+
+        cd.requests_sec  = sn.requests_sec;
+        cd.cache_hit     = sn.cache_hit;
+        cd.latency_p95   = sn.latency_p95;
 
         cd.top_domains   = std::move(sn.top_domains);
         cd.query_types   = std::move(sn.query_types);

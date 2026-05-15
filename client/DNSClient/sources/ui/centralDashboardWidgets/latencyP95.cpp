@@ -1,4 +1,5 @@
 #include "../../headers/ui/centralDashboardWidgets/latencyP95.h"
+#include "../../../headers/themes/darkTheme.h"
 
 Latency::Latency(QWidget* parent) : QWidget(parent) {
     init();
@@ -49,19 +50,6 @@ void Latency::init() {
     m_latency->yAxis->grid()->setVisible(false);
     m_latency->setInteractions(QCP::iNone);
 
-    // range
-    m_latency->xAxis->setRange(0, 60);
-    m_latency->yAxis->setRange(0, 100);
-
-    // ------------------------ Model --------------------------
-    // delete this
-    QVector<double> x(60), y(60);
-
-    for (int i = 0; i < 60; i++) {
-        x[i] = i;
-        y[i] = rand() % 100;
-    }
-
     // ------------------------ Style --------------------------
     setStyleSheet(QString(R"(
         QWidget {
@@ -73,8 +61,25 @@ void Latency::init() {
 
     // ------------------------ Final --------------------------
     layout->addWidget(m_latency, 1);
-    m_latency->graph(0)->setData(x, y);
-    m_latency->replot();
 }
 
+void Latency::updateState(double lat) {
+    if(lat > 0) {
+        m_x.push_back(lat);
+        m_y.push_back(++m_time);
+
+        if(m_x.size() >= MAX_POINTS_COUNT) {
+            m_x.removeFirst();
+            m_y.removeFirst();
+        }
+
+        m_latency->graph(0)->setData(m_x, m_x);
+        m_latency->xAxis->setRange(m_x.first(), m_x.last());
+
+        double max = *std::max_element(m_y.begin(), m_y.end());
+        m_latency->xAxis->setRange(m_y.first(), max);
+
+        m_latency->replot();
+    }
+}
 

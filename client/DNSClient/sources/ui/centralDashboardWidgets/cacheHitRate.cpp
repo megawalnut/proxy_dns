@@ -1,4 +1,5 @@
 #include "../../headers/ui/centralDashboardWidgets/cacheHitRate.h"
+#include "../../../headers/themes/darkTheme.h"
 
 CacheHit::CacheHit(QWidget* parent) : QWidget(parent) {
     init();
@@ -49,19 +50,6 @@ void CacheHit::init() {
     m_cacheHit->yAxis->grid()->setVisible(false);
     m_cacheHit->setInteractions(QCP::iNone);
 
-    // range
-    m_cacheHit->xAxis->setRange(0, 60);
-    m_cacheHit->yAxis->setRange(0, 100);
-
-    // ------------------------ Model --------------------------
-    // delete this
-    QVector<double> x(60), y(60);
-
-    for (int i = 0; i < 60; i++) {
-        x[i] = i;
-        y[i] = rand() % 100;
-    }
-
     // ------------------------ Style --------------------------
     setStyleSheet(QString(R"(
         QWidget {
@@ -73,7 +61,24 @@ void CacheHit::init() {
 
     // ------------------------ Final --------------------------
     layout->addWidget(m_cacheHit, 1);
-    m_cacheHit->graph(0)->setData(x, y);
-    m_cacheHit->replot();
 }
 
+void CacheHit::updateState(double cacheHit) {
+    if(cacheHit > 0) {
+        m_x.push_back(cacheHit);
+        m_y.push_back(++m_time);
+
+        if(m_x.size() >= MAX_POINTS_COUNT) {
+            m_x.removeFirst();
+            m_y.removeFirst();
+        }
+
+        m_cacheHit->graph(0)->setData(m_x, m_x);
+        m_cacheHit->xAxis->setRange(m_x.first(), m_x.last());
+
+        double max = *std::max_element(m_y.begin(), m_y.end());
+        m_cacheHit->xAxis->setRange(m_y.first(), max);
+
+        m_cacheHit->replot();
+    }
+}

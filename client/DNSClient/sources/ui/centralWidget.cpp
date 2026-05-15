@@ -33,7 +33,9 @@ void CentralWidget::init() {
 }
 
 void CentralWidget::updateState(Utils::Areas::CentralData cd) {
-
+    m_request->updateState(cd.requests_sec);
+    m_cacheHit->updateState(cd.cache_hit);
+    m_p95->updateState(cd.latency_p95);
 }
 
 void CentralWidget::disableUI() {
