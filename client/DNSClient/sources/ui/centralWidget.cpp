@@ -39,5 +39,7 @@ void CentralWidget::updateState(Utils::Areas::CentralData cd) {
 }
 
 void CentralWidget::disableUI() {
-
+    m_request->disableUI();
+    m_cacheHit->disableUI();
+    m_p95->disableUI();
 }

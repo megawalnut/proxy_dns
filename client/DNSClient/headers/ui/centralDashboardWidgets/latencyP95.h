@@ -10,6 +10,7 @@ class Latency : public QWidget {
 public:
     explicit Latency(QWidget* parent = nullptr);
     void updateState(double lat);
+    void disableUI();
 
 private:
     void init();

@@ -129,7 +129,7 @@ void ToolBar::disableUI() {
 
 void ToolBar::setStatus(bool state) {
     m_status->setText(state ? "🟢 running"
-                            : "🔴 stopped");
+                            : "🟢 stopped");
     m_status->setStyleSheet(QString("color: %1;").arg(state ? ACCENT_GREEN.name()
                                                             : ACCENT_RED.name()));
 }

@@ -65,21 +65,37 @@ void Latency::init() {
 
 void Latency::updateState(double lat) {
     if(lat > 0) {
-        m_x.push_back(lat);
-        m_y.push_back(++m_time);
+        m_x.push_back(++m_time);
+        m_y.push_back(lat);
 
         if(m_x.size() >= MAX_POINTS_COUNT) {
             m_x.removeFirst();
             m_y.removeFirst();
         }
 
-        m_latency->graph(0)->setData(m_x, m_x);
+        m_latency->graph(0)->setData(m_x, m_y);
         m_latency->xAxis->setRange(m_x.first(), m_x.last());
 
         double max = *std::max_element(m_y.begin(), m_y.end());
-        m_latency->xAxis->setRange(m_y.first(), max);
+        m_latency->yAxis->setRange(0, max > 0 ? max * 1.2 : 10);
 
         m_latency->replot();
     }
 }
 
+void Latency::disableUI() {
+    m_x.push_back(++m_time);
+    m_y.push_back(0);
+
+    if(m_x.size() >= MAX_POINTS_COUNT) {
+        m_x.removeFirst();
+        m_y.removeFirst();
+    }
+
+    m_latency->graph(0)->setData(m_x, m_y);
+
+    m_latency->xAxis->setRange(m_x.first(), m_x.last());
+    m_latency->yAxis->setRange(0, 0);
+
+    m_latency->replot();
+}

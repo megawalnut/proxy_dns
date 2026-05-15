@@ -10,6 +10,7 @@ class RequestsChart : public QWidget {
 public:
     explicit RequestsChart(QWidget* parent = nullptr);
     void updateState(double requests);
+    void disableUI();
 
 private:
     void init();

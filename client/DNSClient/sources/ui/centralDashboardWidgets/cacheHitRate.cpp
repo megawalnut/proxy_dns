@@ -65,20 +65,37 @@ void CacheHit::init() {
 
 void CacheHit::updateState(double cacheHit) {
     if(cacheHit > 0) {
-        m_x.push_back(cacheHit);
-        m_y.push_back(++m_time);
+        m_x.push_back(++m_time);
+        m_y.push_back(cacheHit);
 
         if(m_x.size() >= MAX_POINTS_COUNT) {
             m_x.removeFirst();
             m_y.removeFirst();
         }
 
-        m_cacheHit->graph(0)->setData(m_x, m_x);
+        m_cacheHit->graph(0)->setData(m_x, m_y);
         m_cacheHit->xAxis->setRange(m_x.first(), m_x.last());
 
         double max = *std::max_element(m_y.begin(), m_y.end());
-        m_cacheHit->xAxis->setRange(m_y.first(), max);
+        m_cacheHit->yAxis->setRange(0, max > 0 ? max * 1.2 : 10);
 
         m_cacheHit->replot();
     }
+}
+
+void CacheHit::disableUI() {
+    m_x.push_back(++m_time);
+    m_y.push_back(0);
+
+    if(m_x.size() >= MAX_POINTS_COUNT) {
+        m_x.removeFirst();
+        m_y.removeFirst();
+    }
+
+    m_cacheHit->graph(0)->setData(m_x, m_y);
+
+    m_cacheHit->xAxis->setRange(m_x.first(), m_x.last());
+    m_cacheHit->yAxis->setRange(0, 0);
+
+    m_cacheHit->replot();
 }

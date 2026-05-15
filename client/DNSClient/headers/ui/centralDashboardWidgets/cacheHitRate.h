@@ -10,6 +10,7 @@ class CacheHit : public QWidget {
 public:
     explicit CacheHit(QWidget* parent = nullptr);
     void updateState(double cacheHit);
+    void disableUI();
 
 private:
     void init();

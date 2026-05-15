@@ -65,20 +65,37 @@ void RequestsChart::init() {
 
 void RequestsChart::updateState(double requests) {
     if(requests > 0) {
-        m_x.push_back(requests);
-        m_y.push_back(++m_time);
+        m_x.push_back(++m_time);
+        m_y.push_back(requests);
 
         if(m_x.size() >= MAX_POINTS_COUNT) {
             m_x.removeFirst();
             m_y.removeFirst();
         }
 
-        m_requests->graph(0)->setData(m_x, m_x);
+        m_requests->graph(0)->setData(m_x, m_y);
         m_requests->xAxis->setRange(m_x.first(), m_x.last());
 
         double max = *std::max_element(m_y.begin(), m_y.end());
-        m_requests->xAxis->setRange(m_y.first(), max);
+        m_requests->yAxis->setRange(0, max > 0 ? max * 1.2 : 10);
 
         m_requests->replot();
     }
+}
+
+void RequestsChart::disableUI() {
+    m_x.push_back(++m_time);
+    m_y.push_back(0);
+
+    if(m_x.size() >= MAX_POINTS_COUNT) {
+        m_x.removeFirst();
+        m_y.removeFirst();
+    }
+
+    m_requests->graph(0)->setData(m_x, m_y);
+
+    m_requests->xAxis->setRange(m_x.first(), m_x.last());
+    m_requests->yAxis->setRange(0, 0);
+
+    m_requests->replot();
 }
