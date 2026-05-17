@@ -24,6 +24,7 @@ private:
     void init();
 
 private:
+    QColor m_lastColor = nullptr;
     QLabel* m_title = nullptr;
     QLabel* m_percent = nullptr;
     QProgressBar* m_progress = nullptr;

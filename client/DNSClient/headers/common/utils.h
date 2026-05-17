@@ -154,7 +154,7 @@ namespace Utils {
         return td;
     }
 
-    static inline Areas::CentralData parseCentralData(const MetricRecords::Snapshot& sn/*std::move*/) {
+    static inline Areas::CentralData parseCentralData(MetricRecords::Snapshot sn/*std::move*/) {
         Areas::CentralData cd;
 
         cd.requests_sec  = sn.requests_sec;

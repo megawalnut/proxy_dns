@@ -29,7 +29,7 @@ void QuerryTypes::init() {
 
     m_vectorTypes.reserve(QUERY_SIZE);
     for(int i = 0; i < QUERY_SIZE; ++i) {
-        auto* card = new CardType(this);
+        auto* card = new CardType(cardsWidget);
         card->hide();
         m_vectorTypes.emplace_back(card);
         m_types->addWidget(card, i / 2, i % 2);

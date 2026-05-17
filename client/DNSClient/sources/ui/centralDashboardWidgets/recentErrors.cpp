@@ -18,7 +18,7 @@ void Errors::init() {
     m_view = new QTableView(this);
 
     // ------------------------ Model --------------------------
-    m_model = new QStandardItemModel(3, 3, this);
+    m_model = new QStandardItemModel(0, 3, this);
     m_view->horizontalHeader()->setVisible(false);
     m_view->setModel(m_model);
 
@@ -73,24 +73,30 @@ void Errors::init() {
 }
 
 void Errors::updateState(const std::vector<MetricRecords::ErrorRecord>& errors) {
-    m_model->removeRows(0, m_model->rowCount());
+    int newRows = errors.size();
+    int curRows = m_model->rowCount();
 
-    auto makeItem = [](const QString& text, const QColor& color = ACCENT_GRAY) {
-        auto* item = new QStandardItem(text);
-        if (color.isValid()) {
-            item->setForeground(QBrush(color));
+    // add new rows
+    while(m_model->rowCount() < newRows) {
+        m_model->appendRow({new QStandardItem, new QStandardItem,new QStandardItem});
+    }
+
+    // delete excess rows
+    if(newRows < curRows) {
+        m_model->removeRows(newRows, curRows - newRows);
+    }
+
+    for(int i = 0; i < newRows; ++i) {
+        if (errors[i].time <= 0) {
+            continue;
         }
-        return item;
-    };
-
-    for(const auto& err : errors) {
-        QList<QStandardItem*> row;
-        QDateTime dt = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(err.time));
-        row.append(makeItem(dt.toString("hh:mm:ss")));
-        row.append(makeItem(QString::fromStdString(err.domain), ACCENT_WHITE));
-        row.append(makeItem(QString::fromStdString(err.error), getErrColor(err.error)));
-
-        m_model->appendRow(row);
+        QDateTime dt = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(errors[i].time));
+        m_model->item(i, 0)->setText(dt.toString("hh:mm:ss"));
+        m_model->item(i, 0)->setForeground(ACCENT_GRAY);
+        m_model->item(i, 1)->setText(QString::fromStdString(errors[i].domain));
+        m_model->item(i, 1)->setForeground(ACCENT_WHITE);
+        m_model->item(i, 2)->setText(QString::fromStdString(errors[i].error));
+        m_model->item(i, 2)->setForeground(getErrColor(errors[i].error));
     }
     m_stack->setCurrentIndex(errors.empty() ? 1 : 0);
 }

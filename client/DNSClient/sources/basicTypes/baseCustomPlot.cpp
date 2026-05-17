@@ -89,7 +89,8 @@ void BasePlot::updateState(double lat) {
         double max = *std::max_element(m_y.begin(), m_y.end());
         m_plot->yAxis->setRange(0, max > 0 ? max * 1.2 : 10);
 
-        m_plot->replot();
+        if (!isVisible()) return;
+        m_plot->replot(QCustomPlot::rpQueuedReplot);
     }
     m_stack->setCurrentIndex(m_y.empty() ? 1 : 0);
 }
@@ -106,8 +107,7 @@ void BasePlot::disableUI() {
     m_plot->graph(0)->setData(m_x, m_y);
 
     m_plot->xAxis->setRange(m_x.first(), m_x.last());
-    m_plot->yAxis->setRange(0, 0);
 
     m_plot->replot();
-    m_stack->setCurrentIndex(m_y.empty() ? 1 : 0);
+    m_stack->setCurrentIndex(1);
 }

@@ -45,27 +45,31 @@ void CardType::init() {
 
 void CardType::setData(const DNSTypeStat& stat) {
     m_title->setText(stat.title);
-    m_title->setStyleSheet(QString(R"(
-        QLabel {
-            font-size: 12px;
-            color: %1;
-        }
-    )").arg(stat.col.name()));
-
     m_percent->setText(QString("%1%").arg(stat.percent));
-
     m_progress->setValue(stat.percent);
-    m_progress->setStyleSheet(QString(R"(
-        QProgressBar {
-            background-color: %1;
-            border-radius: 6px;
-        }
 
-        QProgressBar::chunk {
-            background-color: %2;
-            border-radius: 3px;
-        }
-    )").arg(BG_CARD.name(), stat.col.name()));
+    if (m_lastColor != stat.col) {
+        m_lastColor = stat.col;
+        m_title->setStyleSheet(QString(R"(
+            QLabel {
+                font-size: 12px;
+                color: %1;
+            }
+        )").arg(stat.col.name()));
+
+
+        m_progress->setStyleSheet(QString(R"(
+            QProgressBar {
+                background-color: %1;
+                border-radius: 6px;
+            }
+
+            QProgressBar::chunk {
+                background-color: %2;
+                border-radius: 3px;
+            }
+        )").arg(BG_CARD.name(), stat.col.name()));
+    }
 }
 
 // unused

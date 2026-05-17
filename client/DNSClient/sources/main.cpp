@@ -14,6 +14,9 @@ int main(int argc, char *argv[]) {
     DashboardController* controller = new DashboardController(client);
     MainWindow* w = new MainWindow(controller);
 
+    client->setParent(w);
+    controller->setParent(client);
+
     client->startConnection();
 
     return a.exec();
