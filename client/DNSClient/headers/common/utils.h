@@ -49,7 +49,7 @@ namespace Utils {
             double cpu {};
             uint32_t threads {};
         };
-    };
+    }
     namespace Areas {
         struct ToolBarData {
             bool running {};
@@ -77,7 +77,7 @@ namespace Utils {
             double cpu {};
             uint32_t threads {};
         };
-    };
+    }
 
     static inline MetricRecords::Snapshot parseSnapshot(const QJsonObject& obj) {
         MetricRecords::Snapshot sn;
@@ -179,6 +179,6 @@ namespace Utils {
 
         return sd;
     }
-};
+}
 
 #endif // UTILS_H

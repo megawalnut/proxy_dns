@@ -30,8 +30,6 @@ set(PROJECT_SOURCES
     sources/mainwindow.cpp
     #------------ CONTROLLER -----------
     sources/controller/dashboardController.cpp
-    #-------------- MODEL --------------
-    sources/models/errorsModel.cpp
     #-------------- SERVER -------------
     sources/net/client.cpp
     #-------------- THEMES -------------
@@ -40,14 +38,13 @@ set(PROJECT_SOURCES
     sources/ui/toolBar.cpp
     sources/ui/statusBar.cpp
     sources/ui/centralWidget.cpp
+    #----------- BASIC TYPES -----------
+    sources/basicTypes/baseCustomPlot.cpp
+    sources/basicTypes/dnsTypeCardWidget.cpp
     #----------- Dashboar WGT ----------
-    sources/ui/centralDashboardWidgets/requestsChartWidget.cpp
-    sources/ui/centralDashboardWidgets/cacheHitRate.cpp
-    sources/ui/centralDashboardWidgets/latencyP95.cpp
     sources/ui/centralDashboardWidgets/topDomains.cpp
     sources/ui/centralDashboardWidgets/querryTypes.cpp
     sources/ui/centralDashboardWidgets/recentErrors.cpp
-    sources/ui/centralDashboardWidgets/dnsTypeCardWidget.cpp
 
     #________________________________________
     #---------------- HEADERS ---------------
@@ -57,8 +54,6 @@ set(PROJECT_SOURCES
     headers/common/utils.h
     #------------ CONTROLLER -----------
     headers/controller/dashboardController.h
-    #-------------- MODEL --------------
-    headers/models/errorsModel.h
     #-------------- SERVER -------------
     headers/net/client.h
     #-------------- THEMES -------------
@@ -67,14 +62,13 @@ set(PROJECT_SOURCES
     headers/ui/toolBar.h
     headers/ui/statusBar.h
     headers/ui/centralWidget.h
+    #----------- BASIC TYPES -----------
+    headers/basicTypes/baseCustomPlot.h
+    headers/basicTypes/dnsTypeCardWidget.h
     #----------- Dashboar WGT ----------
-    headers/ui/centralDashboardWidgets/requestsChartWidget.h
-    headers/ui/centralDashboardWidgets/cacheHitRate.h
-    headers/ui/centralDashboardWidgets/latencyP95.h
     headers/ui/centralDashboardWidgets/topDomains.h
     headers/ui/centralDashboardWidgets/querryTypes.h
     headers/ui/centralDashboardWidgets/recentErrors.h
-    headers/ui/centralDashboardWidgets/dnsTypeCardWidget.h
 
     #________________________________________
     #-------------- Dependencies ------------

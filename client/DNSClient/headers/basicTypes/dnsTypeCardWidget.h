@@ -6,14 +6,14 @@
 #include <QProgressBar>
 #include <QVBoxLayout>
 
-#include "../../headers/themes/darkTheme.h"
+#include "../themes/darkTheme.h"
 
 class CardType : public QWidget {
 public:
     struct DNSTypeStat {
-        QString title;
+        QString title = "";
         int percent = 0;
-        QColor col{138, 138, 149};
+        QColor col{ACCENT_GRAY};
     };
 
     explicit CardType(QWidget* parent = nullptr);

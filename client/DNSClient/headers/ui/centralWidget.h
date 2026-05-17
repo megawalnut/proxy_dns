@@ -7,9 +7,10 @@
 
 #include  "../headers/common/utils.h"
 
-#include "../headers/ui/centralDashboardWidgets/requestsChartWidget.h"
-#include "../headers/ui/centralDashboardWidgets/cacheHitRate.h"
-#include "../headers/ui/centralDashboardWidgets/latencyP95.h"
+#include "../headers/basicTypes/baseCustomPlot.h"
+//#include "../headers/ui/centralDashboardWidgets/requestsChartWidget.h"
+//#include "../headers/ui/centralDashboardWidgets/cacheHitRate.h"
+//#include "../headers/ui/centralDashboardWidgets/latencyP95.h"
 #include "../headers/ui/centralDashboardWidgets/topDomains.h"
 #include "../headers/ui/centralDashboardWidgets/querryTypes.h"
 #include "../headers/ui/centralDashboardWidgets/recentErrors.h"
@@ -26,9 +27,9 @@ private:
 
 private:
     QGridLayout* m_grid = nullptr;
-    RequestsChart* m_request = nullptr;
-    CacheHit* m_cacheHit = nullptr;
-    Latency* m_p95 = nullptr;
+    BasePlot* m_request = nullptr;
+    BasePlot* m_cacheHit = nullptr;
+    BasePlot* m_p95 = nullptr;
     TopDomains* m_domains = nullptr;
     QuerryTypes* m_types = nullptr;
     Errors* m_errors = nullptr;

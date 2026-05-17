@@ -1,7 +1,8 @@
-#include "../../headers/ui/centralDashboardWidgets/dnsTypeCardWidget.h"
+#include "../../headers/basicTypes/dnsTypeCardWidget.h"
 
 CardType::CardType(QWidget* parent) : QWidget(parent) {
     init();
+    clear();
 }
 
 void CardType::init() {

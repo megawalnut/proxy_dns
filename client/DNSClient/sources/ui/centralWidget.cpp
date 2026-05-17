@@ -9,13 +9,12 @@ void CentralWidget::init() {
     m_grid->setContentsMargins(8, 8, 8, 8);
     m_grid->setSpacing(4);
 
-    m_request = new RequestsChart(this);
-    m_cacheHit = new CacheHit(this);
-    m_p95 = new Latency(this);
+    m_request = new BasePlot("requests / sec — last 60s", ACCENT_BLUE, ACCENT_BLUE_BRUSH, this);
+    m_cacheHit = new BasePlot("cache hit rate — last 60s", ACCENT_GREEN, ACCENT_GREEN_BRUSH, this);
+    m_p95 = new BasePlot("latency p95 ms — last 60s", ACCENT_AMBER, ACCENT_AMBER_BRUSH, this);
     m_domains = new TopDomains(this);
     m_types = new QuerryTypes(this);
     m_errors = new Errors(this);
-
 
     m_grid->addWidget(m_request, 0, 0);
     m_grid->addWidget(m_cacheHit, 0, 1);
@@ -36,10 +35,16 @@ void CentralWidget::updateState(Utils::Areas::CentralData cd) {
     m_request->updateState(cd.requests_sec);
     m_cacheHit->updateState(cd.cache_hit);
     m_p95->updateState(cd.latency_p95);
+    m_domains->updateState(cd.top_domains);
+    m_types->updateState(cd.query_types);
+    m_errors->updateState(cd.recent_errors);
 }
 
 void CentralWidget::disableUI() {
     m_request->disableUI();
     m_cacheHit->disableUI();
     m_p95->disableUI();
+    m_types->disableUI();
+    m_domains->disableUI();
+    m_errors->disableUI();
 }

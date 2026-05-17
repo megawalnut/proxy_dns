@@ -3,21 +3,30 @@
 
 #include <QWidget>
 #include <QGridLayout>
+#include <QColor>
+#include <QStackedWidget>
 
-#include "dnsTypeCardWidget.h"
-#include "../../headers/themes/darkTheme.h"
+#include "../../headers/common/utils.h"
+#include "../../headers/basicTypes/dnsTypeCardWidget.h"
+
+using namespace Utils;
 
 class QuerryTypes : public QWidget {
+    static constexpr inline std::size_t QUERY_SIZE = 4;
 public:
     explicit QuerryTypes(QWidget* parent = nullptr);
-    void update(const std::vector<CardType::DNSTypeStat>& types);
+    void updateState(const std::vector<MetricRecords::QueryTypeRecord>& types);
+    void disableUI();
 
 private:
     void init();
 
 private:
+    QStackedWidget* m_stack = nullptr;
+    QLabel* m_empty = nullptr;
     QGridLayout* m_types = nullptr;
     std::vector<CardType*> m_vectorTypes;
+    std::vector<QColor> m_colors;
 };
 
 #endif // QUERRYTYPES_H
