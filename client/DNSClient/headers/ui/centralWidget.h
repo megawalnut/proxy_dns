@@ -20,7 +20,6 @@ class CentralWidget : public QWidget {
 public:
     explicit CentralWidget(QWidget* parent = nullptr);
     void updateState(Utils::Areas::CentralData);
-    void disableUI();
 
 private:
     void init();

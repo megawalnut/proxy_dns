@@ -13,7 +13,6 @@ class StatusBar : public QStatusBar {
 public:
     explicit StatusBar(QWidget* parent = nullptr);
     void updateState(Utils::Areas::StatusBarData);
-    void disableUI();
 
 private:
     void init();

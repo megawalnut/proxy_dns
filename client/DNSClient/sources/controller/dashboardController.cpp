@@ -12,8 +12,8 @@ void DashboardController::setupConnections() {
     connect(m_client, &Client::startUI,
             this, &DashboardController::startUI);
 
-    connect(m_client, &Client::stopUI,
-            this, &DashboardController::stopUI);
+    connect(m_client, &Client::serverUnavailable,
+            this, &DashboardController::serverUnavailable);
 
     connect(m_client, &Client::packetReady,
             this, &DashboardController::onPacketReady);

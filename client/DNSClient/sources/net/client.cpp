@@ -101,8 +101,8 @@ void Client::onDisconnected() {
 
 void Client::scheduleReconnect() {
     qWarning() << "Client::scheduleReconnect";
-    emit stopUI();
     m_reconnecting = true;
+    emit serverUnavailable();
 
     QTimer::singleShot(5000, this, [this]() {
         if(m_serverSocket->state() == QAbstractSocket::UnconnectedState) {

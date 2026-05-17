@@ -4,7 +4,6 @@
 #include <QWidget>
 #include <QGridLayout>
 #include <QColor>
-#include <QStackedWidget>
 
 #include "../../headers/common/utils.h"
 #include "../../headers/basicTypes/dnsTypeCardWidget.h"
@@ -16,14 +15,11 @@ class QuerryTypes : public QWidget {
 public:
     explicit QuerryTypes(QWidget* parent = nullptr);
     void updateState(const std::vector<MetricRecords::QueryTypeRecord>& types);
-    void disableUI();
 
 private:
     void init();
 
 private:
-    QStackedWidget* m_stack = nullptr;
-    QLabel* m_empty = nullptr;
     QGridLayout* m_types = nullptr;
     std::vector<CardType*> m_vectorTypes;
     std::vector<QColor> m_colors;

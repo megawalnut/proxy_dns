@@ -19,5 +19,6 @@ int main(int argc, char *argv[]) {
 
     client->startConnection();
 
+    w->show();
     return a.exec();
 }

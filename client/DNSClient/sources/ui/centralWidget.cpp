@@ -39,12 +39,3 @@ void CentralWidget::updateState(Utils::Areas::CentralData cd) {
     m_types->updateState(cd.query_types);
     m_errors->updateState(cd.recent_errors);
 }
-
-void CentralWidget::disableUI() {
-    m_request->disableUI();
-    m_cacheHit->disableUI();
-    m_p95->disableUI();
-    m_types->disableUI();
-    m_domains->disableUI();
-    m_errors->disableUI();
-}

@@ -10,10 +10,6 @@ void TopDomains::init() {
     m_layout = new QVBoxLayout(this);
     m_layout->setContentsMargins(0,0,0,0);
 
-    // ------------------------- Stack --------------------------
-    m_stack = new QStackedWidget(this);
-    m_stack->setAttribute(Qt::WA_TranslucentBackground);
-
     // ------------------------ Table --------------------------
     m_view = new QTableView(this);
 
@@ -50,55 +46,24 @@ void TopDomains::init() {
         }
     )").arg(BG_CARD.name(), BG_CARD.name()));
 
-    // ------------------------- Empty --------------------------
-    m_empty = new QLabel("No data", m_stack);
-    m_empty->setAlignment(Qt::AlignCenter);
-    m_empty->setStyleSheet(QString(R"(
-        QLabel {
-            color: %1;
-            font-size: 14px;
-            background-color: %2;
-            border-radius: 10px;
-            border: 1px solid %3;
-        }
-    )").arg(ACCENT_RED.name(), BG_CARD.name(), BORDER.name()));
-
     // ------------------------ Final --------------------------
-    m_stack->addWidget(m_view);
-    m_stack->addWidget(m_empty);
-    m_stack->setCurrentIndex(1);
-
-    m_layout->addWidget(m_stack);
+    m_layout->addWidget(m_view);
     setLayout(m_layout);
 }
 
 
 void TopDomains::updateState(const std::vector<MetricRecords::TopDomainRecord>& domains) {
     int newRows = domains.size();
-    int curRows = m_model->rowCount();
 
-    // add new rows
-    while(m_model->rowCount() < newRows) {
-        m_model->appendRow({new QStandardItem, new QStandardItem,new QStandardItem});
-    }
-
-    // delete excess rows
-    if(newRows < curRows) {
-        m_model->removeRows(newRows, curRows - newRows);
-    }
+    m_model->setRowCount(newRows);
 
     for(int i = 0; i < newRows; ++i) {
-        m_model->item(i, 0)->setText(QString::fromStdString(domains[i].domain));
-        m_model->item(i, 0)->setForeground(ACCENT_WHITE);
-        m_model->item(i, 1)->setText(QString("%1%").arg(domains[i].percent, 0, 'f', 1));
-        m_model->item(i, 1)->setForeground(ACCENT_GRAY);
-        m_model->item(i, 2)->setText(QString::number(domains[i].requests));
-        m_model->item(i, 2)->setForeground(ACCENT_GRAY);
-    }
-    m_stack->setCurrentIndex(domains.empty() ? 1 : 0);
-}
+        m_model->setData(m_model->index(i, 0), QString::fromStdString(domains[i].domain));
+        m_model->setData(m_model->index(i, 1), QString("%1%").arg(domains[i].percent, 0, 'f', 1));
+        m_model->setData(m_model->index(i, 2), QString::number(domains[i].requests));
 
-void TopDomains::disableUI() {
-    m_model->removeRows(0, m_model->rowCount());
-    m_stack->setCurrentIndex(1);
+        m_model->setData(m_model->index(i, 0), ACCENT_WHITE, Qt::ForegroundRole);
+        m_model->setData(m_model->index(i, 1), ACCENT_GRAY, Qt::ForegroundRole);
+        m_model->setData(m_model->index(i, 2), ACCENT_GRAY, Qt::ForegroundRole);
+    }
 }

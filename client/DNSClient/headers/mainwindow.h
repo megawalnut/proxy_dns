@@ -29,7 +29,7 @@ private:
 
 private slots:
     void onStartUI();
-    void onStopUI();
+    void onServerUnavailable();
 
     void onToolBarUpdate(Areas::ToolBarData);
     void onCentralDataUpdate(Areas::CentralData);
@@ -37,13 +37,10 @@ private slots:
 
 private:
     DashboardController* m_controller = nullptr;
-
     // toolBar
     ToolBar* m_toolBar = nullptr;
-
     // centralWidget
     CentralWidget* m_centralWidget = nullptr;
-
     // statusBar
     StatusBar* m_statusBar = nullptr;
 };

@@ -117,16 +117,6 @@ void ToolBar::updateState(Utils::Areas::ToolBarData td) {
     setErrorsPercent(td.errors);
 }
 
-void ToolBar::disableUI() {
-    setStatus({});
-    setUptime({});
-    setRPC({});
-    setCacheHit({});
-    setLatency({});
-    setResolveAvg({});
-    setErrorsPercent({});
-}
-
 void ToolBar::setStatus(bool state) {
     m_status->setText(state ? "🟢 running"
                             : "🟢 stopped");

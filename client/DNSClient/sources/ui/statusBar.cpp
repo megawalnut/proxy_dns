@@ -102,14 +102,6 @@ void StatusBar::updateState(Utils::Areas::StatusBarData sd) {
     setThreads(sd.threads);
 }
 
-void StatusBar::disableUI() {
-    setCacheEntries({});
-    setTotalRequests({});
-    setRam({});
-    setCpu({});
-    setThreads({});
-}
-
 void StatusBar::setCacheEntries(uint64_t entries) {
     m_cacheEntries->setText(QString::number(entries, 10));
 }

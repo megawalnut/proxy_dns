@@ -6,8 +6,6 @@
 #include <QTableView>
 #include <QHeaderView>
 #include <QStandardItemModel>
-#include <QStackedWidget>
-#include <QLabel>
 
 #include "../../headers/common/utils.h"
 
@@ -23,8 +21,6 @@ private:
     void init();
 
 private:
-    QStackedWidget* m_stack = nullptr;
-    QLabel* m_empty = nullptr;
     QStandardItemModel* m_model = nullptr;
     QVBoxLayout* m_layout = nullptr;
     QTableView* m_view = nullptr;

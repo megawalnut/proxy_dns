@@ -12,13 +12,12 @@ class ToolBar : public QWidget {
 public:
     explicit ToolBar(QWidget* parent = nullptr);
     void updateState(Utils::Areas::ToolBarData);
-    void disableUI();
+    void setStatus(bool state);
+    void setUptime(double msec);
 
 private:
     void init();
 
-    void setStatus(bool state);
-    void setUptime(double msec);
     void setRPC(uint32_t rpc);
     void setCacheHit(double hits);
     void setLatency(double p95);

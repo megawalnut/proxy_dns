@@ -22,7 +22,7 @@ private slots:
 
 signals:
     void startUI();
-    void stopUI();
+    void serverUnavailable();
 
     void toolBarUpdate(Utils::Areas::ToolBarData);
     void centralDataUpdate(Utils::Areas::CentralData);

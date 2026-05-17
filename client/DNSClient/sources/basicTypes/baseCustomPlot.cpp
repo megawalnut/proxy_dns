@@ -11,15 +11,6 @@ void BasePlot::init(const QString& title, const QColor& col, const QColor& gradi
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(0);
 
-    // ------------------------- Stack --------------------------
-    m_stack = new QStackedWidget();
-    m_stack->setAttribute(Qt::WA_TranslucentBackground);
-
-    // ------------------------- Empty --------------------------
-    m_empty = new QLabel("No data", m_stack);
-    m_empty->setStyleSheet(QString("color: %1").arg(ACCENT_RED.name()));
-    m_empty->setAlignment(Qt::AlignCenter);
-
     // ------------------------- View ---------------------------
     m_plot = new QCustomPlot(this);
 
@@ -66,38 +57,18 @@ void BasePlot::init(const QString& title, const QColor& col, const QColor& gradi
     )").arg(BG_CARD.name(), BORDER.name()));
 
     // ------------------------ Final --------------------------
-    m_stack->addWidget(m_plot);
-    m_stack->addWidget(m_empty);
-    m_stack->setCurrentIndex(1);
-
-    layout->addWidget(m_stack);
+    layout->addWidget(m_plot);
 }
 
 void BasePlot::updateState(double lat) {
-    if(lat > 0) {
-        m_x.push_back(++m_time);
-        m_y.push_back(lat);
-
-        if(m_x.size() >= MAX_POINTS_COUNT) {
-            m_x.removeFirst();
-            m_y.removeFirst();
-        }
-
-        m_plot->graph(0)->setData(m_x, m_y);
-        m_plot->xAxis->setRange(m_x.first(), m_x.last());
-
-        double max = *std::max_element(m_y.begin(), m_y.end());
-        m_plot->yAxis->setRange(0, max > 0 ? max * 1.2 : 10);
-
-        if (!isVisible()) return;
-        m_plot->replot(QCustomPlot::rpQueuedReplot);
-    }
-    m_stack->setCurrentIndex(m_y.empty() ? 1 : 0);
-}
-
-void BasePlot::disableUI() {
     m_x.push_back(++m_time);
-    m_y.push_back(0);
+    if(lat > 0) {
+        m_lastValue = lat;
+        m_y.push_back(lat);
+    }
+    else {
+        m_y.push_back(m_lastValue);
+    }
 
     if(m_x.size() >= MAX_POINTS_COUNT) {
         m_x.removeFirst();
@@ -105,9 +76,14 @@ void BasePlot::disableUI() {
     }
 
     m_plot->graph(0)->setData(m_x, m_y);
-
     m_plot->xAxis->setRange(m_x.first(), m_x.last());
 
-    m_plot->replot();
-    m_stack->setCurrentIndex(1);
+    double max = *std::max_element(m_y.begin(), m_y.end());
+    m_plot->yAxis->setRange(0, max > 0 ? max * 1.2 : 10);
+
+    if (!isVisible()) {
+        return;
+    }
+
+    m_plot->replot(QCustomPlot::rpQueuedReplot);
 }

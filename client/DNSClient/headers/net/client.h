@@ -38,7 +38,7 @@ private slots:
 signals:
     void packetReady(QJsonObject);
     void startUI();
-    void stopUI();
+    void serverUnavailable();
 
 private:
     QTcpSocket* m_serverSocket = nullptr;

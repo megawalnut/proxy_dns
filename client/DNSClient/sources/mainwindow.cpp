@@ -13,10 +13,9 @@ void MainWindow::onStartUI() {
     show();
 }
 
-void MainWindow::onStopUI() {
-    m_toolBar->disableUI();
-    m_centralWidget->disableUI();
-    m_statusBar->disableUI();
+void MainWindow::onServerUnavailable() {
+    m_toolBar->setStatus(false);
+    m_toolBar->setUptime({});
 }
 
 void MainWindow::init() {
@@ -39,8 +38,8 @@ void MainWindow::setupConnection() {
     connect(m_controller, &DashboardController::startUI,
             this, &MainWindow::onStartUI);
 
-    connect(m_controller, &DashboardController::stopUI,
-            this, &MainWindow::onStopUI);
+    connect(m_controller, &DashboardController::serverUnavailable,
+            this, &MainWindow::onServerUnavailable);
 
     connect(m_controller, &DashboardController::toolBarUpdate,
             this, &MainWindow::onToolBarUpdate);

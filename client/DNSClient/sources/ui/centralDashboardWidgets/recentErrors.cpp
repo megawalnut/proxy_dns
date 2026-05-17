@@ -10,10 +10,6 @@ void Errors::init() {
     m_layout = new QVBoxLayout();
     m_layout->setContentsMargins(0,0,0,0);
 
-    // ------------------------- Stack --------------------------
-    m_stack = new QStackedWidget(this);
-    m_stack->setAttribute(Qt::WA_TranslucentBackground);
-
     // ------------------------ Table --------------------------
     m_view = new QTableView(this);
 
@@ -50,60 +46,29 @@ void Errors::init() {
         }
     )").arg(BG_CARD.name(), BG_CARD.name()));
 
-    // ------------------------- Empty --------------------------
-    m_empty = new QLabel("No data", m_stack);
-    m_empty->setAlignment(Qt::AlignCenter);
-    m_empty->setStyleSheet(QString(R"(
-        QLabel {
-            color: %1;
-            font-size: 14px;
-            background-color: %2;
-            border-radius: 10px;
-            border: 1px solid %3;
-        }
-    )").arg(ACCENT_RED.name(), BG_CARD.name(), BORDER.name()));
-
     // ------------------------ Final --------------------------
-    m_stack->addWidget(m_view);
-    m_stack->addWidget(m_empty);
-    m_stack->setCurrentIndex(1);
-
-    m_layout->addWidget(m_stack);
+    m_layout->addWidget(m_view);
     setLayout(m_layout);
 }
 
 void Errors::updateState(const std::vector<MetricRecords::ErrorRecord>& errors) {
     int newRows = errors.size();
-    int curRows = m_model->rowCount();
 
-    // add new rows
-    while(m_model->rowCount() < newRows) {
-        m_model->appendRow({new QStandardItem, new QStandardItem,new QStandardItem});
-    }
-
-    // delete excess rows
-    if(newRows < curRows) {
-        m_model->removeRows(newRows, curRows - newRows);
-    }
+    m_model->setRowCount(newRows);
 
     for(int i = 0; i < newRows; ++i) {
-        if (errors[i].time <= 0) {
-            continue;
-        }
-        QDateTime dt = QDateTime::fromMSecsSinceEpoch(static_cast<qint64>(errors[i].time));
-        m_model->item(i, 0)->setText(dt.toString("hh:mm:ss"));
-        m_model->item(i, 0)->setForeground(ACCENT_GRAY);
-        m_model->item(i, 1)->setText(QString::fromStdString(errors[i].domain));
-        m_model->item(i, 1)->setForeground(ACCENT_WHITE);
-        m_model->item(i, 2)->setText(QString::fromStdString(errors[i].error));
-        m_model->item(i, 2)->setForeground(getErrColor(errors[i].error));
-    }
-    m_stack->setCurrentIndex(errors.empty() ? 1 : 0);
-}
+        QString timeStr = errors[i].time > 0
+                              ? QDateTime::fromMSecsSinceEpoch((qint64)errors[i].time).toString("hh:mm:ss")
+                              : "-";
 
-void Errors::disableUI() {
-    m_model->removeRows(0, m_model->rowCount());
-    m_stack->setCurrentIndex(1);
+        m_model->setData(m_model->index(i, 0), timeStr);
+        m_model->setData(m_model->index(i, 1), QString::fromStdString(errors[i].domain));
+        m_model->setData(m_model->index(i, 2), QString::fromStdString(errors[i].error));
+
+        m_model->setData(m_model->index(i, 0), ACCENT_GRAY, Qt::ForegroundRole);
+        m_model->setData(m_model->index(i, 1), ACCENT_WHITE,Qt::ForegroundRole);
+        m_model->setData(m_model->index(i, 2), getErrColor(errors[i].error), Qt::ForegroundRole);
+    }
 }
 
 /*static*/
