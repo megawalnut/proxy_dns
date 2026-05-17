@@ -28,10 +28,13 @@ double DNSResolver::getResolve() {
 
     double res = std::chrono::duration<double, std::milli>(acc / m_resolve.size()).count();   // ms
 
+    return res;
+}
+
+void DNSResolver::resetLatency() {
+    std::lock_guard lock{ m_mtxRes };
     m_resolve.clear();
     m_index = 0;
-
-    return res;
 }
 
 DNSResolver::Packet DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
@@ -71,7 +74,8 @@ DNSResolver::Packet DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     // buffer for aPacket
     std::vector<uint8_t> answer(BUFFER_SIZE);
 
-    while(true) {
+    int attempts = 0;
+    while(attempts++ < 10) {
         answer.assign(BUFFER_SIZE, 0);
 
         // get receive
@@ -104,6 +108,7 @@ DNSResolver::Packet DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
         addResolve(std::chrono::steady_clock::now() - start);
         return {Parse::Status::Ok, std::move(pkt), ""};
     }
+    return res;
 }
 
 /*static*/
@@ -116,7 +121,7 @@ int DNSResolver::makeSocket() {
 
     // for block receive if server is unreacheble
     timeval tv{};
-    tv.tv_sec = 5;
+    tv.tv_sec = 1;
     tv.tv_usec = 0;
 
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {

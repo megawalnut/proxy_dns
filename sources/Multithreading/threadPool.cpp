@@ -25,14 +25,12 @@ double ThreadPool::getLatency() {
     {
         std::lock_guard lock{m_mtxLat};
         copy = m_latency;
-        m_latency.clear();
-        m_index = 0;
     }
-    std::sort(copy.begin(), copy.end());
-
     if(copy.empty()) {
         return {};
     }
+    
+    std::sort(copy.begin(), copy.end());
 
     std::size_t count = copy.size() * 0.95;
     if(count >= copy.size()) {
@@ -40,6 +38,12 @@ double ThreadPool::getLatency() {
     }
 
     return std::chrono::duration<double, std::milli>(copy[count]).count();  // 95 percentile
+}
+
+void ThreadPool::resetLatency() {
+    std::lock_guard lock{ m_mtxLat };
+    m_latency.clear();
+    m_index = 0;
 }
 
 uint64_t ThreadPool::getTotalRequests() const {

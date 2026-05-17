@@ -49,7 +49,7 @@ MetricsManager::Snapshot MetricsManager::createSnapshot() {
     auto requests = m_server.getTotalRequests();
     status.requests_sec = requests - m_prev_requests;       // reqs/sec
     m_prev_requests = requests;
-    
+
     status.cache_hit = m_dispatcher.getHitsPercent();       // percent
     status.latency_p95 = m_server.getLatency();             // ms
     status.resolve_avg = m_resolver.getResolve();           // ms
@@ -70,6 +70,15 @@ MetricsManager::Snapshot MetricsManager::createSnapshot() {
     status.ram = getStatusMetric("VmRSS:") / 1024;          // mb
     status.cpu = getCPULoad();                              // percent
     status.threads = getStatusMetric("Threads:");           // count
+
+    // reset for actual data
+    static int tick = 0;
+    if(++tick >= 300) {
+        tick = 0;
+        m_dispatcher.resetDomains();
+        m_server.resetLatency();
+        m_resolver.resetLatency();
+    }
 
     return status;
 }

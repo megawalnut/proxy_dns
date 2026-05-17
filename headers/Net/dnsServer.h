@@ -30,6 +30,7 @@ public:
     uint64_t getTotalRequests() const;
     uint64_t getTotalErrors() const;
     double getLatency();
+    void resetLatency();
     
 private:
     void senderLoop();

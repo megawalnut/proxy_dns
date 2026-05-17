@@ -45,6 +45,10 @@ double DNSServer::getLatency() {
     return m_threadPool.getLatency();
 }
 
+void DNSServer::resetLatency() {
+    m_threadPool.resetLatency();
+}
+
 bool DNSServer::run() {
     if(m_socket < 0) {
         perror("DNSServer::run: Socket closed");

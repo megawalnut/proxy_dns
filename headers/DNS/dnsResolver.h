@@ -29,6 +29,7 @@ public:
 
     DNSResolver::Packet resolve(const DNSParser::DNSPtr& packet);
     double getResolve();
+    void resetLatency();
 
 private:
     static int makeSocket();

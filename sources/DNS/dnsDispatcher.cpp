@@ -42,13 +42,14 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
     addMetrics(errDomain, t);
 
     // check cache
-    std::vector<Cache::Record> result = lookupCache(resources);
-    if(!result.empty()) {
-        ++m_cacheHits;
-        return makeSucPacket(aPacket, result);
+    if(t != DNS::Types::Unknown) {
+        std::vector<Cache::Record> result = lookupCache(resources);
+        if(!result.empty()) {
+            ++m_cacheHits;
+            return makeSucPacket(aPacket, result);
+        }
+        ++m_cacheMiss;
     }
-
-    ++m_cacheMiss;
         
     // resolving + creating answer
     DNSResolver::Packet res;
@@ -56,18 +57,24 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
     if(res.status != Parse::Status::Ok) {
         std::cerr << "DNSDispatcher::dispatch: Failed resolving" << std::endl;
         addError(errDomain, res.error);
+        
+        if (res.error == "NXDOMAIN")
+            return makeErrPacket(aPacket, LDNS_RCODE_NXDOMAIN);
         return makeErrPacket(aPacket, LDNS_RCODE_SERVFAIL);
     }
 
-    aPacket = std::move(res.packet);
-
     //  get answer from resolving packet
     resources.clear();
-    resources = getAnswerRRs(aPacket);
+    resources = getAnswerRRs(res.packet);
     if(resources.empty()) {
-        std::cerr << "DNSDispatcher::dispatch: Answer empty" << std::endl;
-        addError(errDomain, "NXDOMAIN");
-        return makeErrPacket(aPacket, LDNS_RCODE_NXDOMAIN);
+        return makeErrPacket(aPacket, LDNS_RCODE_NOERROR);
+    }
+
+    for(const auto& ansRr : resources) {
+        auto ansType = DNS::fromDNSType(ldns_rr_get_type(ansRr));
+        if(ansType != t) { 
+            addMetrics(getFirstDomain(ansRr), ansType);
+        }
     }
 
     // add to cache
@@ -75,7 +82,7 @@ DNSParser::DNSPtr DNSDispatcher::dispatch(const DNSParser::DNSPtr& clientPacket)
         std::cerr << "DNSDispatcher::dispatch: Failed to adding in cache" << std::endl;
     }
 
-    return aPacket;
+    return DNSParser::DNSPtr(ldns_pkt_clone(res.packet.get()));
 }
 
 
@@ -113,18 +120,50 @@ std::vector<Cache::Record> DNSDispatcher::lookupCache(const std::vector<ldns_rr*
             name.pop_back();
         }
 
-        // create key & find cache record
-        Cache::Key key;
-        key.domain = name;
-        key.type = t;
+        std::string current = name;
+        int step = 0;
+        bool resolved = false;
 
-        auto rec = m_cache.get(key);
-        if(!rec) {
-            std::cout << "Dispatcher::lookupCache: Not found in cache" << std::endl;
+        while (++step < 9) {
+
+            // create key & find cache record
+            Cache::Key key({ current, t });
+
+            auto rec = m_cache.get(key);
+            if(rec) {
+                result.push_back(rec.value());
+                resolved = true;
+                break;
+            }
+
+            // create key & find cache record CNAME
+            Cache::Key cnameKey({ current, DNS::Types::CNAME });
+
+            auto cnameRec = m_cache.get(cnameKey);
+            if(!cnameRec) {
+                std::cout << "Dispatcher::lookupCache: Not found in cache" << std::endl;
+                return {};
+            }
+
+            result.push_back(cnameRec.value());
+
+            if(cnameRec->rdata.empty()) {
+                return {};
+            }
+
+            current = cnameRec->rdata[0];
+            // trim
+            if(!current.empty() && current.back() == '.') {
+                current.pop_back();
+            }
+        }
+    
+        if(!resolved) {
+            std::cerr << "Dispatcher::lookupCache: CNAME chain too deep" << std::endl;
             return {};
         }
-        result.push_back(rec.value());
     }
+
     return result;
 }
 bool DNSDispatcher::addToCache(const std::vector<ldns_rr*>& rrs) {
@@ -321,8 +360,12 @@ DNSParser::DNSPtr DNSDispatcher::makeErrPacket(const DNSParser::DNSPtr& basePack
 
     auto base = ldns_pkt_clone(basePacket.get());
     if(!base) {
-        std::cerr << "DNSDispatcher::makeErrPacket: Failed to clone packet" << std::endl;
-        return DNSParser::DNSPtr(nullptr);
+        base = ldns_pkt_new();
+        if(!base) {
+            std::cerr << "DNSDispatcher::makeErrPacket: Critical alloc failure" << std::endl;
+            return DNSParser::DNSPtr(nullptr);
+        }
+        ldns_pkt_set_qr(base, true);
     }
 
     // ---------------------- HEADER ------------------------
@@ -410,7 +453,7 @@ ldns_rr* DNSDispatcher::buildRr(const Cache::Record& rr) {
 
     // get owner
     std::string domain = rr.key.domain;
-    if(domain.back() != '.') {
+    if(domain.empty() || domain.back() != '.') {
         domain += '.';
     }
 
@@ -515,6 +558,14 @@ bool DNSDispatcher::addRData(ldns_rr* newRr, const Cache::Record& rr) {
                 ldns_rdf* pref = ldns_native2rdf_int16(LDNS_RDF_TYPE_INT16, priority);
                 ldns_rdf* exch = ldns_dname_new_frm_str(host.c_str());
                 if(!pref || !exch) {
+                    if(pref) {
+                        ldns_rdf_free(pref);
+                    }
+                    
+                    if(exch) {
+                        ldns_rdf_free(exch); 
+                    }
+
                     return false;
                 }
 
@@ -562,17 +613,21 @@ std::vector<MetricRecords::TopDomainRecord> DNSDispatcher::getTopDomains() {
     std::sort(sorted.begin(), sorted.end(),
               [](const auto& a, const auto& b) { return a.second > b.second; });
 
-    uint64_t total = 0;
-    for (auto& [k, v] : sorted) total += v;
-
     std::vector<MetricRecords::TopDomainRecord> result;
-    for (std::size_t i = 0; i < std::min(sorted.size(), std::size_t(TOP_DOMAINS_SIZE)); ++i) {
-        double percent = total > 0 ? 100.0 * sorted[i].second / total : 0.0;
-        result.emplace_back(MetricRecords::TopDomainRecord{sorted[i].first, percent, sorted[i].second});
+
+    std::size_t min = std::min(sorted.size(), std::size_t(TOP_DOMAINS_SIZE));
+
+    uint64_t total = 0;
+    for (const auto& [k, v] : sorted) {
+        total += v;
     }
 
-    if(m_domains.size() >= MAX_DOMAINS) {
-        m_domains.clear();
+    for (std::size_t i = 0; i < min; ++i) {
+        double percent = total > 0 
+                         ? static_cast<double>(sorted[i].second) / static_cast<double>(total) * 100.0 
+                         : 0.0;
+                                   
+        result.emplace_back(MetricRecords::TopDomainRecord{sorted[i].first, percent, sorted[i].second});
     }
 
     return result;
@@ -585,17 +640,21 @@ std::vector<MetricRecords::QueryTypeRecord> DNSDispatcher::getQueryTypes() {
     std::sort(sorted.begin(), sorted.end(),
               [](const auto& a, const auto& b) { return a.second > b.second; });
 
-    uint64_t total = 0;
-    for (auto& [k, v] : sorted) total += v;
-
     std::vector<MetricRecords::QueryTypeRecord> result;
-    for (std::size_t i = 0; i < std::min(sorted.size(), std::size_t(QUERY_TYPES_SIZE)); ++i) {
-        double percent = total > 0 ? 100.0 * sorted[i].second / total : 0.0;
-        result.emplace_back(MetricRecords::QueryTypeRecord{sorted[i].first, percent});
+
+    std::size_t min = std::min(sorted.size(), std::size_t(QUERY_TYPES_SIZE));
+
+    uint64_t total = 0;
+    for (const auto& [k, v] : sorted) {
+        total += v;
     }
 
-    if(m_types.size() >= MAX_TYPES) {
-        m_types.clear();
+    for (std::size_t i = 0; i < min; ++i) {
+        double percent = total > 0 
+                         ? static_cast<double>(sorted[i].second) / static_cast<double>(total) * 100.0 
+                         : 0.0;
+
+        result.emplace_back(MetricRecords::QueryTypeRecord{sorted[i].first, percent});
     }
 
     return result;
@@ -606,6 +665,7 @@ std::vector<MetricRecords::ErrorRecord> DNSDispatcher::getRecentErrors() {
 }
 void DNSDispatcher::addMetrics(const std::string& domain, DNS::Types type) {
     std::lock_guard lock{ m_mtx };
+
     ++m_domains[domain];
     ++m_types[DNS::typeToStr(type)];
 }
@@ -617,7 +677,10 @@ void DNSDispatcher::addError(const std::string& domain, const std::string& error
     double time = std::chrono::duration<double, std::milli>(std::chrono::system_clock::now().time_since_epoch()).count();
     m_errors.emplace_back(MetricRecords::ErrorRecord{time, domain, error});
 }
-
+void DNSDispatcher::resetDomains() {
+    std::lock_guard lock{ m_mtx };
+    m_domains.clear();
+}
 
 // -------------------------------------- OTHER ----------------------------------------
 /*static*/

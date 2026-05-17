@@ -24,6 +24,11 @@ void DNSTask::execute(OutQueue& out, bool& isOk) {
         return;
     }
 
+    ldns_pkt_rcode rcode = ldns_pkt_get_rcode(aPacket.get());
+    bool isDnsError = (rcode == LDNS_RCODE_SERVFAIL ||
+                       rcode == LDNS_RCODE_NXDOMAIN ||
+                       rcode == LDNS_RCODE_FORMERR);
+
     // parsing aPacket
     const auto& [okSer, answer] = DNSParser::serialize(aPacket);
     if(okSer != Parse::Status::Ok) {
@@ -34,6 +39,6 @@ void DNSTask::execute(OutQueue& out, bool& isOk) {
     OutPacket::Packet packet = m_packet;
     packet.data = answer;
     packet.size = answer.size();
-    isOk = true;
+    isOk = !isDnsError;
     out.push(packet);
 }
