@@ -4,7 +4,7 @@
 #include "../headers/Metrics/metricsManager.h"
 #include "../headers/Net/clients.h"
 
-static constexpr inline const char* DNS_RESOLVER = "8.8.8.8";
+static constexpr inline const char* DNS_RESOLVER = "77.88.8.8";
 
 int main(int argc, const char* argv[]) {
     Clients clients;

@@ -1,6 +1,6 @@
 #include "../../headers/DNS/dnsResolver.h"
 
-DNSResolver::DNSResolver(const std::string& addr/*8.8.8.8*/) {
+DNSResolver::DNSResolver(const std::string& addr/*77.88.8.8*/) {
     m_resolve.reserve(RESOLVE_SIZE);
     m_upstream.sin_family = AF_INET;
     m_upstream.sin_port = htons(UDP_DNS_PORT);

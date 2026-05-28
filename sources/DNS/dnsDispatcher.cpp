@@ -661,7 +661,13 @@ std::vector<MetricRecords::QueryTypeRecord> DNSDispatcher::getQueryTypes() {
 }
 std::vector<MetricRecords::ErrorRecord> DNSDispatcher::getRecentErrors() {
     std::lock_guard lock{ m_mtx };
-    return { m_errors.cbegin(), m_errors.cend() };
+
+    std::vector<MetricRecords::ErrorRecord>  sorted(m_errors.cbegin(), m_errors.cend());
+
+    std::sort(sorted.begin(), sorted.end(), 
+                [](const auto& a, const auto& b) { return a.time > b.time; });
+
+    return {sorted.cbegin(), sorted.cend()};
 }
 void DNSDispatcher::addMetrics(const std::string& domain, DNS::Types type) {
     std::lock_guard lock{ m_mtx };

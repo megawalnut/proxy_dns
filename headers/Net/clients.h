@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <algorithm>
 
-class Clients {
+class Clients final {
     static constexpr inline int CLIENTS_PORT = 6060;
 public:
     Clients();

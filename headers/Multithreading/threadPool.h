@@ -16,7 +16,7 @@
 
 using namespace Utils;
 
-class ThreadPool {
+class ThreadPool final {
     static constexpr inline uint32_t WORKERS_SIZE = 6;
     static constexpr inline uint32_t LATENCY_SIZE = 1000;
 public:
