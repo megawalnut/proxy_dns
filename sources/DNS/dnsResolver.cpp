@@ -74,40 +74,52 @@ DNSResolver::Packet DNSResolver::resolve(const DNSParser::DNSPtr& packet) {
     // buffer for aPacket
     std::vector<uint8_t> answer(BUFFER_SIZE);
 
-    int attempts = 0;
-    while(attempts++ < 10) {
-        answer.assign(BUFFER_SIZE, 0);
+    const auto timeUpstream = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    while(std::chrono::steady_clock::now() < timeUpstream) {
+        answer.clear();
 
         // get receive
         ssize_t recSize = recvfrom(sock, answer.data(), answer.size(),
                 0, reinterpret_cast<sockaddr*>(&from), &len);
 
-        if(recSize <= 0) {
-            perror("DNSResolver::resolve: Failed recvfrom");
-            res.error = "TIMEOUT";
+        if(recSize < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            }
+
+            perror("DNSResolver::resolve: Failed sendto");
+            res.error = "SERVFAIL";
             return res;
+        }
+
+        // header size
+        if(recSize < 12) {
+            continue;
         }
 
         // validate host
         if(from.sin_addr.s_addr != m_upstream.sin_addr.s_addr ||
             from.sin_port != m_upstream.sin_port) {
-            std::cerr << "DNSResolver::resolve: Unknown sender" << std::endl;
             continue; 
+        }
+
+        // first 2 bytes of header - ID
+        const uint16_t receivedID = (static_cast<uint16_t>(answer[0]) << 8) |
+                                     static_cast<uint16_t>(answer[1]);
+
+        if(receivedID != id) {
+            continue;
         }
 
         auto [ok, pkt] = DNSParser::deserialize(answer, recSize);
         if(ok != Parse::Status::Ok) {
             continue;
         }
-
-        // this packet is not our, skip
-        if(ldns_pkt_id(pkt.get()) != id) {
-            continue;
-        }
         
         addResolve(std::chrono::steady_clock::now() - start);
         return {Parse::Status::Ok, std::move(pkt), ""};
     }
+    res.error = "TIMEOUT";
     return res;
 }
 
@@ -121,8 +133,8 @@ int DNSResolver::makeSocket() {
 
     // for block receive if server is unreacheble
     timeval tv{};
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000;
 
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
         perror("DNSResolver::DNSResolver: Setsockopt failed");
